@@ -4,5 +4,11 @@
   "name": "Hacker News Discussion",
   "description": "Adds a button linking to the Hacker News discussion for the current page",
   "version": "0.1",
-  "author": "Jacob Strieb"
+  "author": "Jacob Strieb",
+
+  "permissions": [ "tabs" ],
+
+  "background": {
+    "scripts": [ "background.js" ]
+  }
 }
