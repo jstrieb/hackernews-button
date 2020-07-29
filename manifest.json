@@ -12,6 +12,19 @@
     "default_icon": {}
   },
 
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": {
+        "default": "Alt+Y"
+      }
+    },
+    "open_in_new_tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y"
+      }
+    }
+  },
+
   "background": {
     "scripts": [ "background.js" ]
   }

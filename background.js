@@ -92,10 +92,23 @@ function handleActionClicked(tab, onClickData) {
 
 
 
-// Main procedure; called on initialization
-browser.tabs.onRemoved.addListener(tabId => delete tabs[tabId]);
-browser.tabs.onUpdated.addListener(handleTabUpdated);
-browser.browserAction.onClicked.addListener(handleActionClicked);
-browser.browserAction.disable();
-browser.browserAction.setBadgeText({"text": ""});
-// TODO: Set badge background color to something less obnoxious - match YC logo
+/**
+ * Main procedure function, called on extension initialization
+ */
+(() => {
+  // Set up listeners
+  browser.tabs.onRemoved.addListener(tabId => delete tabs[tabId]);
+  browser.tabs.onUpdated.addListener(handleTabUpdated);
+  browser.browserAction.onClicked.addListener(handleActionClicked);
+  browser.commands.onCommand.addListener(command => {
+    if (command === "open_in_new_tab") {
+      browser.tabs.query({active: true, currentWindow: true})
+        .then(tabs => handleActionClicked(tabs[0], {button: 1, modifiers: []}));
+    }
+  });
+
+  // Style the browser action button
+  browser.browserAction.disable();
+  browser.browserAction.setBadgeText({"text": ""});
+  // TODO: Set badge bg color to something less obnoxious - match YC logo
+})();
