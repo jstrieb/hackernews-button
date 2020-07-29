@@ -8,6 +8,10 @@
 
   "permissions": [ "tabs" ],
 
+  "browser_action": {
+    "default_icon": {}
+  },
+
   "background": {
     "scripts": [ "background.js" ]
   }

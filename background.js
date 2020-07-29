@@ -1,19 +1,14 @@
 var tabs = {};
 
+// TODO: Remove
 console.log("Loaded Hacker News Discussion extension...");
-
-
-
-function activateButton(tab) {
-  console.log("Tab activated", tab);
-}
 
 
 /**
  * Called when a tab gets "updated." Most importantly, this includes when a
  * user clicks a link.
  */
-function updateTab(tabId, changeInfo, tab) {
+function handleTabUpdated(tabId, changeInfo, tab) {
   // Only submit URLs of pages that have completed loading
   if (!("status" in changeInfo && changeInfo.status == "complete")) {
     return;
@@ -22,6 +17,7 @@ function updateTab(tabId, changeInfo, tab) {
   // Ignore built-in Firefox "about:" pages
   var tab_url = new URL(tab.url);
   if (tab_url.protocol == "about:") {
+    deactivateBadge(tabId);
     return;
   }
 
@@ -42,19 +38,57 @@ function updateTab(tabId, changeInfo, tab) {
           && tab_url.search == hit_url.search);
       });
 
-      // If a story matched, set its value in the dictionary
+      // If a story matched, set its value in the tablist and enable clicking
       if (stories.length > 0) {
         tabs[tabId] = stories[0];
+        activateBadge(stories[0], tabId);
         return;
       }
 
       // TODO: Fall back on fuzzy title matching for inexact URLs
+
+      deactivateBadge(tabId);
     }));
+}
+
+
+/**
+ * Activate the badge for a particular tab
+ */
+function activateBadge(story, tabId) {
+  browser.browserAction.enable(tabId);
+  browser.browserAction.setBadgeText({
+    "text": "" + story.points,
+    "tabId": tabId
+  });
+}
+
+
+/**
+ * Deactivate the badge for a particular tab
+ */
+function deactivateBadge(tabId) {
+  browser.browserAction.disable(tabId);
+  browser.browserAction.setBadgeText({
+    "text": "",
+    "tabId": tabId
+  });
+}
+
+
+/**
+ *
+ */
+function handleActionClicked(tab, onClickData) {
+  console.log("Clicked!");
 }
 
 
 
 // Main procedure; called on initialization
 browser.tabs.onRemoved.addListener(tabId => delete tabs[tabId]);
-browser.tabs.onActivated.addListener(activateButton);
-browser.tabs.onUpdated.addListener(updateTab);
+browser.tabs.onUpdated.addListener(handleTabUpdated);
+browser.browserAction.onClicked.addListener(handleActionClicked);
+browser.browserAction.disable();
+browser.browserAction.setBadgeText({"text": ""});
+// TODO: Set badge background color to something less obnoxious - match YC logo
