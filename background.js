@@ -1,9 +1,5 @@
 var tabs = {};
 
-// TODO: Remove
-console.log("Loaded Hacker News Discussion extension...");
-
-
 /**
  * Called when a tab gets "updated." Most importantly, this includes when a
  * user clicks a link.
@@ -58,8 +54,8 @@ function handleTabUpdated(tabId, changeInfo, tab) {
 function activateBadge(story, tabId) {
   browser.browserAction.enable(tabId);
   browser.browserAction.setBadgeText({
-    "text": "" + story.points,
-    "tabId": tabId
+    text: "" + story.points,
+    tabId: tabId
   });
 }
 
@@ -70,17 +66,28 @@ function activateBadge(story, tabId) {
 function deactivateBadge(tabId) {
   browser.browserAction.disable(tabId);
   browser.browserAction.setBadgeText({
-    "text": "",
-    "tabId": tabId
+    text: "",
+    tabId: tabId
   });
 }
 
 
 /**
- *
+ * Open the Hacker News Discussion when the action is clicked. Do it in a new
+ * Window if the Shift key is pressed when the click happens. If any other
+ * modifier keys or the middle mouse button are clicked, open in a new tab.
+ * Otherwise, open in the current tab.
  */
 function handleActionClicked(tab, onClickData) {
-  console.log("Clicked!");
+  var hn_id = tabs[tab.id].objectID;
+  var hn_url = `https://news.ycombinator.com/item?id=${hn_id}`;
+  if (onClickData.button == 0 && onClickData.modifiers.length == 0) {
+    browser.tabs.update(tab.id, {url: hn_url});
+  } else if (onClickData.modifiers.includes("Shift")) {
+    browser.windows.create({url: hn_url});
+  } else {
+    browser.tabs.create({url: hn_url});
+  }
 }
 
 
