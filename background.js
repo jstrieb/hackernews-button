@@ -10,9 +10,9 @@ function handleTabUpdated(tabId, changeInfo, tab) {
     return;
   }
 
-  // Ignore built-in Firefox "about:" pages
+  // Ignore built-in Firefox "about:" pages and local files
   var tab_url = new URL(tab.url);
-  if (tab_url.protocol == "about:") {
+  if (tab_url.protocol == "about:" || tab_url.protocol == "file:") {
     deactivateBadge(tabId);
     return;
   }
