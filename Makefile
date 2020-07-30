@@ -8,6 +8,7 @@ icons: ycombinator-logo.jpg
 	convert -resize 32x32 ycombinator-logo.jpg icons/icon-32.png
 	convert -resize 48x48 ycombinator-logo.jpg icons/icon-48.png
 	convert -resize 64x64 ycombinator-logo.jpg icons/icon-64.png
+	convert -resize 96x96 ycombinator-logo.jpg icons/icon-96.png
 
 
 ycombinator-logo.jpg:
