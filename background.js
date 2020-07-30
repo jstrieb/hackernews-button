@@ -6,13 +6,13 @@ var tabs = {};
  */
 function handleTabUpdated(tabId, changeInfo, tab) {
   // Only submit URLs of pages that have completed loading
-  if (!("status" in changeInfo && changeInfo.status == "complete")) {
+  if (!("status" in changeInfo && changeInfo.status === "complete")) {
     return;
   }
 
   // Ignore built-in Firefox "about:" pages and local files
   var tab_url = new URL(tab.url);
-  if (tab_url.protocol == "about:" || tab_url.protocol == "file:") {
+  if (tab_url.protocol === "about:" || tab_url.protocol === "file:") {
     deactivateBadge(tabId);
     return;
   }
@@ -109,6 +109,8 @@ function handleActionClicked(tab, onClickData) {
 
   // Style the browser action button
   browser.browserAction.disable();
-  browser.browserAction.setBadgeText({"text": ""});
+  browser.browserAction.setBadgeText({text: ""});
+  browser.browserAction.setBadgeBackgroundColor({color: "#f0652f"});
+  browser.browserAction.setBadgeTextColor({color: "white"});
   // TODO: Set badge bg color to something less obnoxious - match YC logo
 })();
