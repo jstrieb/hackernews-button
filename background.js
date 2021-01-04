@@ -41,9 +41,29 @@ function handleTabUpdated(tabId, changeInfo, tab) {
         return;
       }
 
-      // TODO: Fall back on fuzzy title matching for inexact URLs
+      // Otherwise, try matching by title
+      fetch(`https://hn.algolia.com/api/v1/search?tags=story&query=${tab.title}`)
+        .then(data => data.json().then(json => {
+          var stories = Array.from(json.hits).filter(hit => {
+            if (hit == null) return false;
+            try {
+              var hit_url = new URL(hit.url);
+            } catch (err) {
+              console.error("Failed on " + hit.url);
+              return false;
+            }
+            return tab_url.host == hit_url.host;
+          });
 
-      deactivateBadge(tabId);
+          // If a story matched, set its value in the tablist and enable clicking
+          if (stories.length > 0) {
+            tabs[tabId] = stories[0];
+            activateBadge(stories[0], tabId);
+            return;
+          }
+
+          deactivateBadge(tabId);
+        }));
     }));
 }
 
