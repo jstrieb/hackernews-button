@@ -1,3 +1,9 @@
 # Vim swap files
 *.swp
 *.swo
+
+# Generated binaries and other files
+bin
+hn-discussion.zip
+ycombinator-logo.jpg
+icons
