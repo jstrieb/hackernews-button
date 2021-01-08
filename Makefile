@@ -37,24 +37,24 @@ INC = bloom-filter
 # Bundle extension for release (download and resize icons if necessary)
 ################################################################################
 
-hn-discussion.zip: manifest.json background.js icons
+hackernews-button.zip: manifest.json background.js icons
 	zip \
 		--recurse-paths \
-		hn-discussion.zip \
-		manifest.json background.js icons
+		"$@" \
+		$^
 
 # NOTE: Requires ImageMagick
 icons: ycombinator-logo.jpg
 	mkdir -p icons
-	convert -resize 16x16 ycombinator-logo.jpg icons/icon-16.png
-	convert -resize 32x32 ycombinator-logo.jpg icons/icon-32.png
-	convert -resize 48x48 ycombinator-logo.jpg icons/icon-48.png
-	convert -resize 64x64 ycombinator-logo.jpg icons/icon-64.png
-	convert -resize 96x96 ycombinator-logo.jpg icons/icon-96.png
+	convert -resize 16x16 $< icons/icon-16.png
+	convert -resize 32x32 $< icons/icon-32.png
+	convert -resize 48x48 $< icons/icon-48.png
+	convert -resize 64x64 $< icons/icon-64.png
+	convert -resize 96x96 $< icons/icon-96.png
 
 ycombinator-logo.jpg:
 	curl \
-		--output "ycombinator-logo.jpg" \
+		--output "$@" \
 		"https://feeds.backtracks.fm/feeds/series/cb81757a-3054-11e7-89cf-0e1b887eb36a/images/main.jpg"
 
 
@@ -67,7 +67,11 @@ ycombinator-logo.jpg:
 create: bin/bloom-create
 
 bin/bloom-create: bin murmur.c bloom.c bloom-create.c
-	$(CC) $(CFLAGS) -I $(INC) $(filter %.c, $^) -o $@
+	$(CC) \
+		$(CFLAGS) \
+		-I $(INC) \
+		$(filter %.c, $^) \
+		-o $@
 
 
 
@@ -84,7 +88,11 @@ bin:
 	mkdir -p bin
 
 bin/murmur-test: bin murmur.c murmur-test.c
-	$(CC) $(CFLAGS) -I $(INC) $(filter %.c, $^) -o $@
+	$(CC) \
+		$(CFLAGS) \
+		-I $(INC) \
+		$(filter %.c, $^) \
+		-o $@
 
 bin/murmur-test.html: bin murmur.c murmur-test.c test-template.html
 	emcc $(filter %.c, $^) \
@@ -97,7 +105,11 @@ bin/murmur-test.html: bin murmur.c murmur-test.c test-template.html
 	@echo "Start a local web server in this directory and go to /murmur-test.html"
 
 bin/bloom-test: bin murmur.c bloom.c bloom-test.c
-	$(CC) $(CFLAGS) -I $(INC) $(filter %.c, $^) -o $@
+	$(CC) \
+		$(CFLAGS) \
+		-I $(INC) \
+		$(filter %.c, $^) \
+		-o $@
 
 bin/bloom-test.html: bin murmur.c bloom.c bloom-test.c test-template.html
 	emcc $(filter %.c, $^) \
