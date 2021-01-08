@@ -37,7 +37,8 @@ INC = bloom-filter
 # Bundle extension for release (download and resize icons if necessary)
 ################################################################################
 
-hackernews-button.zip: manifest.json background.js icons
+# TODO: Remove out.bloom
+hackernews-button.zip: manifest.json background.js bloom.js bloom.wasm bloom-wrap.js background.html icons
 	zip \
 		--recurse-paths \
 		"$@" \
@@ -71,6 +72,22 @@ bin/bloom-create: bin murmur.c bloom.c bloom-create.c
 		$(CFLAGS) \
 		-I $(INC) \
 		$(filter %.c, $^) \
+		-o $@
+
+
+
+################################################################################
+# Compile wrapper library to wasm and export for use in extension scripts
+################################################################################
+
+bloom.js: murmur.c bloom.c bloom-js-export.c
+	emcc $(filter %.c, $^) \
+		-I $(INC) \
+		-s WASM=1 \
+		-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "writeArrayToMemory"]' \
+		-s ENVIRONMENT=web \
+		-s ALLOW_MEMORY_GROWTH=1 \
+		-s ASSERTIONS=1 \
 		-o $@
 
 

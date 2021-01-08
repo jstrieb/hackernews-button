@@ -4,6 +4,8 @@
 
 # Generated binaries and other files
 bin
-hn-discussion.zip
+hackernews-button.zip
 ycombinator-logo.jpg
 icons
+bloom.js
+bloom.wasm
