@@ -29,7 +29,7 @@ byte *new_bloom(uint8_t num_bits) {
 
   // Subtracting 3 effectively divides by 8 to account for allocating bytes
   num_bits -= 3;
-  return (byte *)calloc((1 << num_bits), sizeof(byte));
+  return (byte *)calloc(1 << num_bits, sizeof(byte));
 }
 
 

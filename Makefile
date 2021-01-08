@@ -20,6 +20,7 @@
 
 SHELL = /bin/sh
 
+# NOTE: GNU extensions used for getline and getopt_long in bloom-create.c
 CC = gcc
 CFLAGS = -std=gnu99 \
 				 -pedantic \
@@ -55,6 +56,18 @@ ycombinator-logo.jpg:
 	curl \
 		--output "ycombinator-logo.jpg" \
 		"https://feeds.backtracks.fm/feeds/series/cb81757a-3054-11e7-89cf-0e1b887eb36a/images/main.jpg"
+
+
+
+################################################################################
+# Generate bloom filters from the command line
+################################################################################
+
+.PHONY: create
+create: bin/bloom-create
+
+bin/bloom-create: bin murmur.c bloom.c bloom-create.c
+	$(CC) $(CFLAGS) -I $(INC) $(filter %.c, $^) -o $@
 
 
 
