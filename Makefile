@@ -75,6 +75,7 @@ bin/murmur-test: bin murmur.c murmur-test.c
 
 bin/murmur-test.html: bin murmur.c murmur-test.c test-template.html
 	emcc $(filter %.c, $^) \
+		-I $(INC) \
 		-s WASM=1 \
 		-s ASSERTIONS=1 \
 		-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
@@ -87,6 +88,7 @@ bin/bloom-test: bin murmur.c bloom.c bloom-test.c
 
 bin/bloom-test.html: bin murmur.c bloom.c bloom-test.c test-template.html
 	emcc $(filter %.c, $^) \
+		-I $(INC) \
 		-s WASM=1 \
 		-s ASSERTIONS=1 \
 		-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
