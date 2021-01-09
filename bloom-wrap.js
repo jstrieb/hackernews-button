@@ -1,4 +1,4 @@
-function new_bloom(bloom) {
+function newBloom(bloom) {
   let addr = Module.ccall(
     "js_new_bloom",
     "number",
@@ -9,7 +9,7 @@ function new_bloom(bloom) {
   Module.writeArrayToMemory(bloom.filter, bloom.addr);
 }
 
-function free_bloom(bloom) {
+function freeBloom(bloom) {
   Module.ccall(
     "js_free_bloom",
     null,
@@ -18,7 +18,7 @@ function free_bloom(bloom) {
   );
 }
 
-function add_bloom(bloom, url) {
+function addBloom(bloom, url) {
   return Module.ccall(
     "js_add_bloom",
     null,
@@ -27,7 +27,7 @@ function add_bloom(bloom, url) {
   );
 }
 
-function in_bloom(bloom, url) {
+function inBloom(bloom, url) {
   return Module.ccall(
     "js_in_bloom",
     "boolean",
@@ -46,9 +46,10 @@ async function load_bloom() {
     num_bits: Math.log2(b.length) + 3,
     addr: null,
   };
-  new_bloom(window.bloom);
+  newBloom(window.bloom);
 
-  window.addEventListener("beforeunload", e => free_bloom(window.bloom.addr));
+  // TODO: Is this enough? Or is this leaking memory?
+  window.addEventListener("beforeunload", e => freeBloom(window.bloom.addr));
 }
 
 var Module = {

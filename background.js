@@ -17,7 +17,7 @@ function handleTabUpdated(tabId, changeInfo, tab) {
     return;
   }
 
-  if (!in_bloom(window.bloom, tab.url)) {
+  if (!inBloom(window.bloom, tab.url)) {
     return;
   }
 
@@ -97,7 +97,7 @@ function handleActionClicked(tab, onClickData) {
  * don't even bother detecting it.
  */
 function addLatest(urls) {
-  urls.forEach(u => add_bloom(window.bloom, u));
+  urls.forEach(u => addBloom(window.bloom, u));
 }
 
 
