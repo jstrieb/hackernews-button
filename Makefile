@@ -37,8 +37,15 @@ INC = bloom-filter
 # Bundle extension for release (download and resize icons if necessary)
 ################################################################################
 
-# TODO: Remove out.bloom
-hackernews-button.zip: manifest.json background.js bloom.js bloom.wasm bloom-wrap.js background.html icons
+EXTENSION_FILES = manifest.json \
+									background.js \
+									background.html \
+									bloom.js \
+									bloom.wasm \
+									bloom-wrap.js \
+									icons
+
+hackernews-button.zip: $(EXTENSION_FILES)
 	zip \
 		--recurse-paths \
 		"$@" \

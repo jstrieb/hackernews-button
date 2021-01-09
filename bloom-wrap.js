@@ -36,29 +36,21 @@ function in_bloom(bloom, url) {
   );
 }
 
-async function main() {
+async function load_bloom() {
   let b = await fetch("out.bloom")
     .then(r => r.blob())
     .then(b => b.arrayBuffer())
     .then(a => new Uint8Array(a));
-  let bloom = {
+  window.bloom = {
     filter: b,
     num_bits: Math.log2(b.length) + 3,
     addr: null,
   };
-  new_bloom(bloom);
+  new_bloom(window.bloom);
 
-  console.log(in_bloom(bloom, "test"));
-  console.log(in_bloom(bloom, "nottest"));
-
-  add_bloom(bloom, "test");
-
-  console.log(in_bloom(bloom, "test"));
-  console.log(in_bloom(bloom, "nottest"));
-
-  free_bloom(bloom.addr);
+  window.addEventListener("beforeunload", e => free_bloom(window.bloom.addr));
 }
 
 var Module = {
-  onRuntimeInitialized: main,
+  onRuntimeInitialized: load_bloom,
 };

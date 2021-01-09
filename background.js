@@ -17,54 +17,13 @@ function handleTabUpdated(tabId, changeInfo, tab) {
     return;
   }
 
-  // Fetch a search for the current page and parse the JSON result
-  fetch(`https://hn.algolia.com/api/v1/search?tags=story&query=${tab.url}`)
-    .then(data => data.json().then(json => {
-      // Filter out stories whose URL doesn't match the current one
-      var stories = Array.from(json.hits).filter(hit => {
-        if (hit == null) return false;
-        try {
-          var hit_url = new URL(hit.url);
-        } catch (err) {
-          console.error("Failed on " + hit.url);
-          return false;
-        }
-        return (tab_url.host == hit_url.host
-          && tab_url.pathname == hit_url.pathname
-          && tab_url.search == hit_url.search);
-      });
+  if (!in_bloom(window.bloom, tab.url)) {
+    return;
+  }
 
-      // If a story matched, set its value in the tablist and enable clicking
-      if (stories.length > 0) {
-        tabs[tabId] = stories[0];
-        activateBadge(stories[0], tabId);
-        return;
-      }
-
-      // Otherwise, try matching by title
-      fetch(`https://hn.algolia.com/api/v1/search?tags=story&query=${tab.title}`)
-        .then(data => data.json().then(json => {
-          var stories = Array.from(json.hits).filter(hit => {
-            if (hit == null) return false;
-            try {
-              var hit_url = new URL(hit.url);
-            } catch (err) {
-              console.error("Failed on " + hit.url);
-              return false;
-            }
-            return tab_url.host == hit_url.host;
-          });
-
-          // If a story matched, set its value in the tablist and enable clicking
-          if (stories.length > 0) {
-            tabs[tabId] = stories[0];
-            activateBadge(stories[0], tabId);
-            return;
-          }
-
-          deactivateBadge(tabId);
-        }));
-    }));
+  // TODO: Add bloom filter results to the tablist
+  activateBadge({points: "1+"}, tabId);
+  return;
 }
 
 
@@ -99,15 +58,37 @@ function deactivateBadge(tabId) {
  * Otherwise, open in the current tab.
  */
 function handleActionClicked(tab, onClickData) {
-  var hn_id = tabs[tab.id].objectID;
-  var hn_url = `https://news.ycombinator.com/item?id=${hn_id}`;
-  if (onClickData.button == 0 && onClickData.modifiers.length == 0) {
-    browser.tabs.update(tab.id, {url: hn_url});
-  } else if (onClickData.modifiers.includes("Shift")) {
-    browser.windows.create({url: hn_url});
-  } else {
-    browser.tabs.create({url: hn_url});
-  }
+  // Only get the discussion URL if the button is clicked by the user
+  fetch(`https://hn.algolia.com/api/v1/search?tags=story&query=${tab.url}`)
+    .then(data => data.json())
+    .then(json => {
+      var stories = Array.from(json.hits).filter(hit => {
+        if (hit == null) return false;
+        try {
+          var hit_url = new URL(hit.url);
+        } catch (err) {
+          console.error("Failed on " + hit.url);
+          return false;
+        }
+        return (new URL(tab.url)).host == hit_url.host;
+      });
+
+      // If a story matched, go to the discussion
+      if (stories.length > 0) {
+        var hn_id = stories[0].objectID;
+        var hn_url = `https://news.ycombinator.com/item?id=${hn_id}`;
+        if (onClickData.button == 0 && onClickData.modifiers.length == 0) {
+          browser.tabs.update(tab.id, {url: hn_url});
+        } else if (onClickData.modifiers.includes("Shift")) {
+          browser.windows.create({url: hn_url});
+        } else {
+          browser.tabs.create({url: hn_url});
+        }
+
+        // Return true so that the default behavior is not overridden
+        return true;
+      }
+    });
 }
 
 
@@ -130,7 +111,7 @@ function handleActionClicked(tab, onClickData) {
   // Style the browser action button
   browser.browserAction.disable();
   browser.browserAction.setBadgeText({text: ""});
-  browser.browserAction.setBadgeBackgroundColor({color: "#f0652f"});
+  browser.browserAction.setBadgeBackgroundColor({color: "red"});
   browser.browserAction.setBadgeTextColor({color: "white"});
   // TODO: Set badge bg color to something less obnoxious - match YC logo
 })();
