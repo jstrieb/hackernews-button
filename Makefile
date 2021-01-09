@@ -43,6 +43,7 @@ EXTENSION_FILES = manifest.json \
 									bloom.js \
 									bloom.wasm \
 									bloom-wrap.js \
+									add-latest.js \
 									icons
 
 hackernews-button.zip: $(EXTENSION_FILES)
@@ -153,4 +154,4 @@ bin/bloom-test.html: bin murmur.c bloom.c bloom-test.c test-template.html
 
 .PHONY: clean
 clean:
-	rm -rf bin
+	rm -rf bin hackernews-button.zip

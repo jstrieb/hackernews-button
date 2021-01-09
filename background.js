@@ -91,6 +91,15 @@ function handleActionClicked(tab, onClickData) {
     });
 }
 
+/***
+ * Add Hacker News story URLs from browsed pages to the Bloom filter. Re-adding
+ * URLs that are already there doesn't cost much, nor does it cause harm, so we
+ * don't even bother detecting it.
+ */
+function addLatest(urls) {
+  urls.forEach(u => add_bloom(window.bloom, u));
+}
+
 
 
 /**
@@ -101,6 +110,7 @@ function handleActionClicked(tab, onClickData) {
   browser.tabs.onRemoved.addListener(tabId => delete tabs[tabId]);
   browser.tabs.onUpdated.addListener(handleTabUpdated);
   browser.browserAction.onClicked.addListener(handleActionClicked);
+  browser.runtime.onMessage.addListener(addLatest);
   browser.commands.onCommand.addListener(command => {
     if (command === "open_in_new_tab") {
       browser.tabs.query({active: true, currentWindow: true})
