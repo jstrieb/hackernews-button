@@ -13,7 +13,17 @@
     "96": "icons/icon-96.png"
   },
 
-  "permissions": [ "tabs" ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{eb7ac216-532c-4fa6-b17f-d1d081f9f2e1}"
+    }
+  },
+
+  "permissions": [
+    "tabs",
+    "storage",
+    "unlimitedStorage"
+  ],
 
   "browser_action": {
     "default_icon": {

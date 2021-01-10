@@ -17,12 +17,16 @@ function handleTabUpdated(tabId, changeInfo, tab) {
     return;
   }
 
-  if (!inBloom(window.bloom, tab.url)) {
+  // Remove the hash when checking bloom filter membership
+  tab_url.hash = ""
+
+  if (!inBloom(window.bloom, tab_url.toString())) {
+    deactivateBadge(tab.id);
     return;
   }
 
   // TODO: Add bloom filter results to the tablist
-  activateBadge({points: "1+"}, tabId);
+  activateBadge({points: ""}, tabId);
   return;
 }
 
@@ -58,16 +62,24 @@ function deactivateBadge(tabId) {
  * Otherwise, open in the current tab.
  */
 function handleActionClicked(tab, onClickData) {
+  // Algolia doesn't work well with URLs like:
+  // https://www.youtube.com/watch?v=-pdSjBPH3zM
+  // I suspect the "=-" leads to treating "-" as an exclusion operator somehow
+  // https://www.algolia.com/doc/api-reference/api-parameters/advancedSyntax
+  let tab_url = tab.url.replace("=-", "=");
+
   // Only get the discussion URL if the button is clicked by the user
-  fetch(`https://hn.algolia.com/api/v1/search?tags=story&query=${tab.url}`)
+  fetch(`https://hn.algolia.com/api/v1/search?tags=story&query=${tab_url}`)
     .then(data => data.json())
     .then(json => {
+      // Filter only those search results that match on the domain of the
+      // current page - approximate, but mostly works
       var stories = Array.from(json.hits).filter(hit => {
-        if (hit == null) return false;
+        if (!hit || !hit.url) return false;
         try {
           var hit_url = new URL(hit.url);
         } catch (err) {
-          console.error("Failed on " + hit.url);
+          console.error("Opening Hacker News discussion failed on " + hit.url);
           return false;
         }
         return (new URL(tab.url)).host == hit_url.host;
@@ -88,6 +100,8 @@ function handleActionClicked(tab, onClickData) {
         // Return true so that the default behavior is not overridden
         return true;
       }
+
+      deactivateBadge(tab.id);
     });
 }
 
@@ -95,9 +109,17 @@ function handleActionClicked(tab, onClickData) {
  * Add Hacker News story URLs from browsed pages to the Bloom filter. Re-adding
  * URLs that are already there doesn't cost much, nor does it cause harm, so we
  * don't even bother detecting it.
+ *
+ * This function is called when a content script runs on news.ycombinator.com
+ * and posts a message with the URLs to add.
  */
 function addLatest(urls) {
   urls.forEach(u => addBloom(window.bloom, u));
+
+  // Save the updated Bloom filter
+  window.bloom.filter = new Uint8Array(Module.HEAPU8.buffer, window.bloom.addr,
+      window.bloom.filter.length);
+  browser.storage.local.set({"bloom_filter": window.bloom})
 }
 
 
@@ -121,7 +143,6 @@ function addLatest(urls) {
   // Style the browser action button
   browser.browserAction.disable();
   browser.browserAction.setBadgeText({text: ""});
-  browser.browserAction.setBadgeBackgroundColor({color: "red"});
+  browser.browserAction.setBadgeBackgroundColor({color: "#f0652f"});
   browser.browserAction.setBadgeTextColor({color: "white"});
-  // TODO: Set badge bg color to something less obnoxious - match YC logo
 })();

@@ -37,15 +37,22 @@ function inBloom(bloom, url) {
 }
 
 async function load_bloom() {
-  let b = await fetch("out.bloom")
-    .then(r => r.blob())
-    .then(b => b.arrayBuffer())
-    .then(a => new Uint8Array(a));
-  window.bloom = {
-    filter: b,
-    num_bits: Math.log2(b.length) + 3,
-    addr: null,
-  };
+  // Try to get the Bloom filter out of storage, otherwise download latest
+  window.bloom = (await browser.storage.local.get("bloom_filter")).bloom_filter;
+  if (!window.bloom.filter) {
+    let b = await fetch("out.bloom")
+      .then(r => r.blob())
+      .then(b => b.arrayBuffer())
+      .then(a => new Uint8Array(a));
+    window.bloom = {
+      filter: b,
+      num_bits: Math.round(Math.log2(b.length)) + 3,
+      addr: null,
+    };
+
+    // Save the downloaded Bloom filter
+    browser.storage.local.set({"bloom_filter": window.bloom})
+  }
   newBloom(window.bloom);
 
   // TODO: Is this enough? Or is this leaking memory?
