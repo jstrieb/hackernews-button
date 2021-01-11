@@ -109,7 +109,8 @@ async function load_bloom() {
   // browser.storage.local.remove("bloom_filter")
   window.bloom = (await browser.storage.local.get("bloom_filter")).bloom_filter;
   if (!window.bloom || !window.bloom.filter) {
-    let b = await fetch("out.bloom")
+    let b = await fetch("https://github.com/jstrieb/hackernews-button/releases"
+          + "/latest/download/hackernews.bloom")
       .then(r => r.blob())
       .then(b => b.arrayBuffer())
       .then(a => new Uint8Array(a));
@@ -118,6 +119,8 @@ async function load_bloom() {
       num_bits: Math.round(Math.log2(b.length)) + 3,
       addr: null,
     };
+
+    // TODO: Fail gracefully if both attempts above to load a Bloom filter fail
 
     // Save the downloaded Bloom filter
     browser.storage.local.set({"bloom_filter": window.bloom})

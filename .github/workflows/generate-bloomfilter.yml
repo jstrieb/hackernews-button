@@ -54,8 +54,8 @@ jobs:
       - name: Set Datestrings (for Release Name/Tag)
         id: set_datestrings
         run: |
-          echo "::set-output name=date_num::$(date +%Y%m%d%H%M%S)"
-          echo "::set-output name=date_text::$(date '+%A, %B %d, %Y %H:%M:%S')"
+          echo "::set-output name=date_num::$(date +%Y%m%d)"
+          echo "::set-output name=date_text::$(date '+%B %d, %Y')"
 
       - name: Create Release
         id: create_release

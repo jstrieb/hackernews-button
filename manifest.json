@@ -20,6 +20,7 @@
   },
 
   "permissions": [
+    "<all_urls>",
     "tabs",
     "storage",
     "unlimitedStorage"
@@ -50,8 +51,7 @@
 
   "content_scripts": [{
     "matches": [
-      "https://news.ycombinator.com/*",
-      "http://news.ycombinator.com/*"
+      "*://news.ycombinator.com/*"
     ],
     "js": ["add-latest.js"]
   }],
