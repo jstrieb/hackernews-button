@@ -1,0 +1,2 @@
+# The workflows are basically just shell scripts
+.github/workflows/*.yml linguist-language=Shell

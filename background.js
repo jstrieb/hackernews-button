@@ -101,8 +101,9 @@ function handleActionClicked(tab, onClickData) {
         return true;
       }
 
-      deactivateBadge(tab.id);
-    });
+      // deactivateBadge(tab.id);
+    })
+    .catch(console.error);
 }
 
 /***
