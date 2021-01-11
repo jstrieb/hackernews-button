@@ -1,0 +1,66 @@
+name: Generate Bloom Filter
+
+on: [workflow_dispatch]
+
+jobs:
+  create-bloomfilter:
+    name: Create Bloom Filter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up BigQuery
+        run: |
+          echo '${{ secrets.BQ_JSON }}' > bq.json
+          gcloud auth \
+            activate-service-account "${{ secrets.SERVICE_ACCOUNT }}" \
+            --key-file bq.json
+
+      - name: Compile Bloom filter creation program
+        run: |
+          make create
+
+      - name: Pull BigQuery data
+        run: |
+          bq query \
+            --format csv \
+            --max_rows 99999999 \
+            --use_legacy_sql=false \
+            'SELECT
+              url
+             FROM
+               `bigquery-public-data.hacker_news.full`
+             WHERE
+               dead IS NOT TRUE
+               AND deleted IS NOT TRUE
+               AND url != ""' \
+            > data.csv
+
+      - name: Generate Bloom Filter
+        run: |
+          python3 canonicalize.py < data.csv | bin/bloom-create hackernews.bloom
+
+      - name: Set Datestrings (for Release Name/Tag)
+        id: set_datestrings
+        run: |
+          echo "::set-output name=date_num::$(date +%Y%m%d%H%M%S)"
+          echo "::set-output name=date_text::$(date '+%A, %B %d, %Y %H:%M:%S')"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.set_datestrings.outputs.date_num }}
+          release_name: ${{ steps.set_datestrings.outputs.date_text }}
+
+      - name: Upload Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./hackernews.bloom
+          asset_name: hackernews.bloom
+          asset_content_type: application/octet-stream
