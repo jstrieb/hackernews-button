@@ -13,8 +13,15 @@ jobs:
         run: |
           echo '${{ secrets.BQ_JSON }}' > bq.json
           gcloud auth \
-            activate-service-account "${{ secrets.SERVICE_ACCOUNT }}" \
+            activate-service-account \
             --key-file bq.json
+          # Unfortunately, bq outputs some dumb shit the first time we run it
+          # with the new authentication, so we do a dummy call here to prevent
+          # it from outputting the annoying welcome message directly into the
+          # CSV we are attempting to process
+          bq query \
+            --use_legacy_sql=false \
+            'SELECT COUNT(*) FROM `bigquery-public-data.hacker_news.full`'
 
       - name: Compile Bloom filter creation program
         run: |
@@ -27,7 +34,10 @@ jobs:
             --max_rows 99999999 \
             --use_legacy_sql=false \
             'SELECT
-              url
+              url,
+              score,
+              descendants,
+              time
              FROM
                `bigquery-public-data.hacker_news.full`
              WHERE
@@ -35,6 +45,7 @@ jobs:
                AND deleted IS NOT TRUE
                AND url != ""' \
             > data.csv
+          head -n 50 data.csv
 
       - name: Generate Bloom Filter
         run: |
