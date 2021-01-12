@@ -1,3 +1,30 @@
+/* bloom-wrap.js
+ *
+ * Wrapper around Bloom filter WebAssembly functions. Includes a helper
+ * function to take a normal URL and "canonicalize" it so that it matches the
+ * format of the URLs inserted into the Bloom filter.
+ *
+ * Created by Jacob Strieb
+ * January 2021
+ */
+
+
+/*******************************************************************************
+ * Global variables
+ ******************************************************************************/
+
+/***
+ * Transform the current URL object to make it as "canonical" as possible. This
+ * includes removing unnecessary URL parameters, removing "www." from the
+ * beginning of URLs, stripping unnecessary parts of the path, and performing a
+ * few domain-specific adjustments.
+ *
+ * NOTE: The order in which the transformations take place is subtly important.
+ * Do not change the order around without good reason.
+ *
+ * NOTE: Any canonicalization changes made here *MUST* be reflected in the
+ * `URL.canonicalize` function within the `canonicalize.py` file!
+ */
 function canonicalizeUrl(rawUrl) {
   let url = new URL(rawUrl);
 
@@ -63,7 +90,15 @@ function canonicalizeUrl(rawUrl) {
   return result;
 }
 
+
+
+/*******************************************************************************
+ * Wrapper functions
+ ******************************************************************************/
+
 function newBloom(bloom) {
+  // Need to heap-allocate the bloom filter because passing it directly will
+  // cause a stack overflow
   let addr = Module.ccall(
     "js_new_bloom",
     "number",
@@ -74,6 +109,7 @@ function newBloom(bloom) {
   Module.writeArrayToMemory(bloom.filter, bloom.addr);
 }
 
+
 function freeBloom(bloom) {
   Module.ccall(
     "js_free_bloom",
@@ -82,6 +118,7 @@ function freeBloom(bloom) {
     [bloom.addr]
   );
 }
+
 
 function addBloom(bloom, url) {
   url = canonicalizeUrl(url);
@@ -93,6 +130,7 @@ function addBloom(bloom, url) {
   );
 }
 
+
 function inBloom(bloom, url) {
   url = canonicalizeUrl(url);
   return Module.ccall(
@@ -103,6 +141,16 @@ function inBloom(bloom, url) {
   );
 }
 
+
+
+/*******************************************************************************
+ * Main function
+ ******************************************************************************/
+
+/***
+ * Load the Bloom filter as soon as there is a WebAssembly runtime to load it
+ * with. This is typically right when the browser/extension starts up.
+ */
 async function load_bloom() {
   // Try to get the Bloom filter out of storage, otherwise download latest. To
   // clear the stored Bloom filter while testing, from the browser console do:

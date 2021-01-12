@@ -1,6 +1,19 @@
+# Generate Bloom filters with submitted Hacker News stories periodically and
+# on-command for use in the accompanying browser extension.
+#
+# Created by Jacob Strieb
+# January 2021
+
+
 name: Generate Bloom Filter
 
-on: [workflow_dispatch]
+# Run once every 24 hours because that is how often the BigQuery database seems
+# to be updated. Also run when manually triggered.
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
 
 jobs:
   create-bloomfilter:
@@ -11,6 +24,9 @@ jobs:
 
       - name: Set up BigQuery
         run: |
+          # This BQ_JSON key is obtained by downloading the JSON key for a
+          # service account on BigQuery. It is then copied directly into a
+          # GitHub Actions secret (under Settings)
           echo '${{ secrets.BQ_JSON }}' > bq.json
           gcloud auth \
             activate-service-account \
@@ -29,6 +45,7 @@ jobs:
 
       - name: Pull BigQuery data
         run: |
+          # Note that max_rows must be an unsigned, 32-bit int
           bq query \
             --format csv \
             --max_rows 99999999 \
@@ -54,6 +71,7 @@ jobs:
       - name: Set Datestrings (for Release Name/Tag)
         id: set_datestrings
         run: |
+          # https://git.io/JLbLa
           echo "::set-output name=date_num::$(date +%Y%m%d)"
           echo "::set-output name=date_text::$(date '+%B %d, %Y')"
 

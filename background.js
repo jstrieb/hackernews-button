@@ -1,6 +1,56 @@
+/* background.js
+ *
+ * Handle user interaction and other relevant web extension events. Expects
+ * that bloom-wrap.js and bloom.js will be included in the background.html page
+ * before this runs.
+ *
+ * Created by Jacob Strieb
+ * July 2020 & January 2021
+ */
+
+
+/*******************************************************************************
+ * Global variables
+ ******************************************************************************/
+
 var tabs = {};
 
-/**
+
+
+/*******************************************************************************
+ * Helper functions
+ ******************************************************************************/
+
+/***
+ * Activate the badge for a particular tab
+ */
+function activateBadge(story, tabId) {
+  browser.browserAction.enable(tabId);
+  browser.browserAction.setBadgeText({
+    text: "" + story.points,
+    tabId: tabId
+  });
+}
+
+
+/***
+ * Deactivate the badge for a particular tab
+ */
+function deactivateBadge(tabId) {
+  browser.browserAction.disable(tabId);
+  browser.browserAction.setBadgeText({
+    text: "",
+    tabId: tabId
+  });
+}
+
+
+
+/*******************************************************************************
+ * Event handlers
+ ******************************************************************************/
+
+/***
  * Called when a tab gets "updated." Most importantly, this includes when a
  * user clicks a link.
  */
@@ -31,31 +81,7 @@ function handleTabUpdated(tabId, changeInfo, tab) {
 }
 
 
-/**
- * Activate the badge for a particular tab
- */
-function activateBadge(story, tabId) {
-  browser.browserAction.enable(tabId);
-  browser.browserAction.setBadgeText({
-    text: "" + story.points,
-    tabId: tabId
-  });
-}
-
-
-/**
- * Deactivate the badge for a particular tab
- */
-function deactivateBadge(tabId) {
-  browser.browserAction.disable(tabId);
-  browser.browserAction.setBadgeText({
-    text: "",
-    tabId: tabId
-  });
-}
-
-
-/**
+/***
  * Open the Hacker News Discussion when the action is clicked. Do it in a new
  * Window if the Shift key is pressed when the click happens. If any other
  * modifier keys or the middle mouse button are clicked, open in a new tab.
@@ -106,6 +132,7 @@ function handleActionClicked(tab, onClickData) {
     .catch(console.error);
 }
 
+
 /***
  * Add Hacker News story URLs from browsed pages to the Bloom filter. Re-adding
  * URLs that are already there doesn't cost much, nor does it cause harm, so we
@@ -125,7 +152,11 @@ function addLatest(urls) {
 
 
 
-/**
+/*******************************************************************************
+ * Main function called on browser startup or extension load
+ ******************************************************************************/
+
+/***
  * Main procedure function, called on extension initialization
  */
 (() => {
