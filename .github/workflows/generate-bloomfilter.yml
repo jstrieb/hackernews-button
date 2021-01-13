@@ -5,21 +5,25 @@
 # January 2021
 
 
-name: Generate Bloom Filter
+name: Generate Bloom Filters
 
 # Run once every 24 hours because that is how often the BigQuery database seems
 # to be updated. Also run when manually triggered.
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "5 0 * * *"
   workflow_dispatch:
 
 
 jobs:
   create-bloomfilter:
-    name: Create Bloom Filter
+    name: Create Bloom Filters
     runs-on: ubuntu-latest
     steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get install jo
+
       - uses: actions/checkout@v2
 
       - name: Set up BigQuery
@@ -65,33 +69,98 @@ jobs:
             > data.csv
           head -n 50 data.csv
 
+          # Put the data in a sqlite3 database
+          sqlite3 \
+            data.db \
+            ".mode csv" \
+            ".import data.csv hn"
+
       - name: Generate Bloom Filters
         run: |
-          python3 canonicalize.py < data.csv \
-            | bin/bloom-create hackernews.bloom
+          # Generate one Bloom filter for each date range/threshold combination
+          # Used as sqlite3 date modifiers:
+          # https://sqlite.org/lang_datefunc.html
+          DATE_RANGES=(
+            "-1 month"
+            "-7 days"
+            "-48 hours"
+          )
 
-      - name: Set Datestrings (for Release Name/Tag)
-        id: set_datestrings
-        run: |
-          # https://git.io/JLbLa
-          echo "::set-output name=date_num::$(date +%Y%m%d)"
-          echo "::set-output name=date_text::$(date '+%B %d, %Y')"
+          THRESHOLDS=(
+            0
+            10
+            75
+            250
+            500
+          )
+
+          # Apply the threshold to points (score) or comments (descendants)
+          THRESHOLD_KEY="score"
+
+          mkdir generated
+
+          for THRESHOLD in "${THRESHOLDS[@]}"; do
+            FILENAME="hn-$THRESHOLD.bloom"
+
+            # Make a Bloom filter for each threshold with no time restriction
+            echo "Creating bloom filter for stories from all time and" \
+              "$THRESHOLD+ $THRESHOLD_KEY. Writing to $FILENAME..."
+
+            sqlite3 \
+              -header \
+              -csv \
+              data.db \
+              "SELECT * FROM hn WHERE $THRESHOLD_KEY > $THRESHOLD" \
+              | python3 canonicalize.py \
+              | bin/bloom-create "generated/$FILENAME"
+
+            # For the current threshold, make a bloom filter for each date range
+            for DATE_RANGE in "${DATE_RANGES[@]}"; do
+              DATE_RANGE_STR="$(echo $DATE_RANGE | sed 's/[- ]//g')"
+              FILENAME="hn-$DATE_RANGE_STR-$THRESHOLD.bloom"
+
+              echo "Creating bloom filter for $DATE_RANGE and" \
+                "$THRESHOLD+ $THRESHOLD_KEY. Writing to $FILENAME..."
+
+              sqlite3 \
+                -header \
+                -csv \
+                data.db \
+                "SELECT * FROM hn WHERE $THRESHOLD_KEY > $THRESHOLD
+                  AND CAST(time AS INT) > strftime('%s', 'now', '$DATE_RANGE')" \
+                | python3 canonicalize.py \
+                | bin/bloom-create "generated/$FILENAME"
+            done
+          done
+
+          # Output a JSON file with information about the thresholds and dates
+          DATES=()
+          for DATE_RANGE in "${DATE_RANGES[@]}"; do
+            DATE_RANGE_STR="$(echo $DATE_RANGE | sed 's/[- ]//g')"
+            DATE="$(date -d "now ""$DATE_RANGE" +%s)"
+            DATES+=("$DATE_RANGE_STR=$DATE")
+          done
+
+          jo \
+            -p \
+            thesholds=$(jo -a "${THRESHOLDS[@]}") \
+            dates=$(jo "${DATES[@]}") \
+            > generated/info.json
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.set_datestrings.outputs.date_num }}
-          release_name: ${{ steps.set_datestrings.outputs.date_text }}
+        run: |
+          cd generated
 
-      - name: Upload Release
-        uses: actions/upload-release-asset@v1
+          ASSETS=()
+          for ASSET in *; do
+            ASSETS+=("-a" "$ASSET")
+          done
+
+          # Source:
+          # https://git.io/JtfOg
+          hub release create \
+            "${ASSETS[@]}" \
+            -m "$(date '+%B %d, %Y')" \
+            "$(date +%Y%m%d)"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./hackernews.bloom
-          asset_name: hackernews.bloom
-          asset_content_type: application/octet-stream
