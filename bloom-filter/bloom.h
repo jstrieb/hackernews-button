@@ -21,14 +21,14 @@
  ******************************************************************************/
 
 // NUM_HASHES calculated using https://hur.st/bloomfilter
-// In particular: at the time this file was created, there are approximately 3
+// In particular: at the time this file was created, there are approximately 4
 // million stories on HN (not necessarily with unique URLs), and the bloom
 // filter is sized to approximately 16MB with this in-mind. This calculator
 // suggests using this number of hashes for a bloom filter of this size, with
 // fairly low probability of collisions for between 3 million and up to 10
 // million elements.
 #ifndef NUM_HASHES
-#define NUM_HASHES 31
+#define NUM_HASHES 23
 #endif /* NUM_HASHES */
 
 typedef uint8_t byte;

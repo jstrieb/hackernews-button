@@ -92,7 +92,7 @@ function handleActionClicked(tab, onClickData) {
   // https://www.youtube.com/watch?v=-pdSjBPH3zM
   // I suspect the "=-" leads to treating "-" as an exclusion operator somehow
   // https://www.algolia.com/doc/api-reference/api-parameters/advancedSyntax
-  let tab_url = tab.url.replace("=-", "=");
+  let tab_url = canonicalizeUrl(tab.url).replace("=-", "=");
 
   // Only get the discussion URL if the button is clicked by the user
   fetch(`https://hn.algolia.com/api/v1/search?tags=story&query=${tab_url}`)
@@ -127,7 +127,7 @@ function handleActionClicked(tab, onClickData) {
         return true;
       }
 
-      // deactivateBadge(tab.id);
+      deactivateBadge(tab.id);
     })
     .catch(console.error);
 }

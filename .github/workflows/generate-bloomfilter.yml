@@ -58,15 +58,17 @@ jobs:
              FROM
                `bigquery-public-data.hacker_news.full`
              WHERE
-               dead IS NOT TRUE
+               type = "story"
+               AND dead IS NOT TRUE
                AND deleted IS NOT TRUE
                AND url != ""' \
             > data.csv
           head -n 50 data.csv
 
-      - name: Generate Bloom Filter
+      - name: Generate Bloom Filters
         run: |
-          python3 canonicalize.py < data.csv | bin/bloom-create hackernews.bloom
+          python3 canonicalize.py < data.csv \
+            | bin/bloom-create hackernews.bloom
 
       - name: Set Datestrings (for Release Name/Tag)
         id: set_datestrings
