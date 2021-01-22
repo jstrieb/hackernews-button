@@ -100,7 +100,7 @@ function handleActionClicked(tab, onClickData) {
     .then(json => {
       // Filter only those search results that match on the domain of the
       // current page - approximate, but mostly works
-      var stories = Array.from(json.hits).filter(hit => {
+      let stories = Array.from(json.hits).filter(hit => {
         if (!hit || !hit.url) return false;
         try {
           var hit_url = new URL(hit.url);
@@ -108,13 +108,26 @@ function handleActionClicked(tab, onClickData) {
           console.error("Opening Hacker News discussion failed on " + hit.url);
           return false;
         }
-        return (new URL(tab.url)).host == hit_url.host;
+        let url = new URL(tab.url);
+
+        // Return true if the hosts match and neither path is /, or if the hosts
+        // match and both paths are /.
+        //
+        // Fixes problems where Algolia doesn't return a result for the exact
+        // page if a top-level URL is used to search. For example, without
+        // this, using the extension on https://github.com/ returns a result
+        // for a GitHub blog post, not the post using the GitHub homepage as
+        // the story URL
+        return (url.host === hit_url.host
+                && ((url.pathname === "/" && hit_url.pathname === "/")
+                 || (url.pathname !== "/" && hit_url.pathname !== "/")));
       });
 
-      // If a story matched, go to the discussion
+      // If a story matched, go to the discussion for the one Algolia picked as
+      // the "top" result
       if (stories.length > 0) {
-        var hn_id = stories[0].objectID;
-        var hn_url = `https://news.ycombinator.com/item?id=${hn_id}`;
+        let hn_id = stories[0].objectID;
+        let hn_url = `https://news.ycombinator.com/item?id=${hn_id}`;
         if (onClickData.button == 0 && onClickData.modifiers.length == 0) {
           browser.tabs.update(tab.id, {url: hn_url});
         } else if (onClickData.modifiers.includes("Shift")) {
@@ -122,9 +135,7 @@ function handleActionClicked(tab, onClickData) {
         } else {
           browser.tabs.create({url: hn_url});
         }
-
-        // Return true so that the default behavior is not overridden
-        return true;
+        return;
       }
 
       deactivateBadge(tab.id);
