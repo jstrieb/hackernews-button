@@ -31,6 +31,14 @@ CFLAGS = -std=gnu99 \
 VPATH = bloom-filter test
 INC = bloom-filter
 
+# NOTE: In compilation commands, libraries for linker must come after code
+# using the libraries. See:
+# https://stackoverflow.com/a/409402/1376127
+#
+# For including zlib when compiling with emscripten, use "USE_ZLIB" as-per:
+# https://emscripten.org/docs/compiling/Building-Projects.html#emscripten-ports
+LDLIBS = -lz
+
 
 
 ################################################################################
@@ -80,6 +88,7 @@ bin/bloom-create: bin murmur.c bloom.c bloom-create.c
 		$(CFLAGS) \
 		-I $(INC) \
 		$(filter %.c, $^) \
+		$(LDLIBS) \
 		-o $@
 
 
@@ -96,6 +105,7 @@ bloom.js: murmur.c bloom.c bloom-js-export.c
 		-s ENVIRONMENT=web \
 		-s ALLOW_MEMORY_GROWTH=1 \
 		-s ASSERTIONS=1 \
+		-s USE_ZLIB=1 \
 		-o $@
 
 
@@ -115,6 +125,7 @@ bin:
 bin/murmur-test: bin murmur.c murmur-test.c
 	$(CC) \
 		$(CFLAGS) \
+		-g \
 		-I $(INC) \
 		$(filter %.c, $^) \
 		-o $@
@@ -132,8 +143,10 @@ bin/murmur-test.html: bin murmur.c murmur-test.c test-template.html
 bin/bloom-test: bin murmur.c bloom.c bloom-test.c
 	$(CC) \
 		$(CFLAGS) \
+		-g \
 		-I $(INC) \
 		$(filter %.c, $^) \
+		$(LDLIBS) \
 		-o $@
 
 bin/bloom-test.html: bin murmur.c bloom.c bloom-test.c test-template.html
@@ -143,6 +156,7 @@ bin/bloom-test.html: bin murmur.c bloom.c bloom-test.c test-template.html
 		-s ASSERTIONS=1 \
 		-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
 		--shell-file $(filter %.html, $^) \
+		-s USE_ZLIB=1 \
 		-o $@
 	@echo "Start a local web server in this directory and go to /bloom-test.html"
 

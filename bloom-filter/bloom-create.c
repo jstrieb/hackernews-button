@@ -26,6 +26,7 @@ struct args {
   char *infile;
   char *outfile;
   int bloom_bits;
+  int use_compression;
 };
 
 
@@ -44,6 +45,7 @@ void print_usage(char *prog_name) {
       "Options:\n"
       " -i, --input=IN\t\tInput file to read strings from, default is stdin\n"
       " -b, --bloom-bits=EXP\tUse 2^EXP bits for Bloom filter, default is 27\n"
+      " -c, --no-compress\tTurn off gzip output compression, on by default\n"
       " -h, --help\t\tDisplay this help message\n"
       "\nCreated by Jacob Strieb in January 2021.\n", prog_name);
 }
@@ -59,15 +61,17 @@ void parse_args(int argc, char *argv[], struct args *parsed_args) {
   // 2^27 bits = 2^24 bytes = 16MB (approx)
   // Calculated for 3-10M entries using: https://hur.st/bloomfilter
   parsed_args->bloom_bits = 27;
+  parsed_args->use_compression = 1;
 
   int c, long_index;
   struct option opts[] = {
     { "input", required_argument, NULL, 'i' },
     { "bloom-bits", required_argument, NULL, 'b' },
+    { "no-compress", no_argument, NULL, 'c' },
     { "help", no_argument, NULL, 'h' },
     { 0, 0, 0, 0 }
   };
-  while ((c = getopt_long(argc, argv, "i:b:h", opts, &long_index)) != -1) {
+  while ((c = getopt_long(argc, argv, "i:b:ch", opts, &long_index)) != -1) {
     switch(c) {
       case 'i':
         // According to GDB this just points into argv, so we don't have to
@@ -83,6 +87,10 @@ void parse_args(int argc, char *argv[], struct args *parsed_args) {
           print_usage(argv[0]);
           exit(EXIT_FAILURE);
         }
+        break;
+
+      case 'c':
+        parsed_args->use_compression = 0;
         break;
 
       case 'h':
@@ -121,14 +129,14 @@ int main(int argc, char *argv[]) {
   parse_args(argc, argv, &args);
 
   // Open files specified by user inputs
-  FILE *infile, *outfile;
+  FILE *infile;
   if (args.infile == NULL) {
     infile = stdin;
   } else if ((infile = fopen(args.infile, "r")) == NULL) {
     perror("Unable to open input file");
     return EXIT_FAILURE;
   }
-  if (args.outfile == NULL || (outfile = fopen(args.outfile, "w")) == NULL) {
+  if (args.outfile == NULL) {
     perror("Unable to open output file");
     print_usage(argv[0]);
     return EXIT_FAILURE;
@@ -155,15 +163,26 @@ int main(int argc, char *argv[]) {
     add_bloom(bloom, args.bloom_bits, (uint8_t *)buffer, bytes_read - 1);
   }
 
-  // Write the bloom filter out to a file
-  fwrite((void *)bloom, sizeof(uint8_t), 1 << (args.bloom_bits - 3), outfile);
+  if (args.use_compression) {
+    // Write the Bloom filter out to a gzip compressed file
+    write_compressed_bloom(args.outfile, bloom, args.bloom_bits);
+  } else {
+    // Write teh Bloom filter out to a non-compressed file
+    FILE *outfile;
+    if ((outfile = fopen(args.outfile, "w")) == NULL) {
+      perror("Unable to open output file");
+      print_usage(argv[0]);
+      return EXIT_FAILURE;
+    }
+    fwrite((void *)bloom, sizeof(uint8_t), 1 << (args.bloom_bits - 3), outfile);
+    fclose(outfile);
+  }
 
   // Clean up
   free(buffer);
   free_bloom(bloom);
 
   fclose(infile);
-  fclose(outfile);
 
   return EXIT_SUCCESS;
 }

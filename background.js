@@ -156,9 +156,7 @@ function addLatest(urls) {
   urls.forEach(u => addBloom(window.bloom, u));
 
   // Save the updated Bloom filter
-  window.bloom.filter = new Uint8Array(Module.HEAPU8.buffer, window.bloom.addr,
-      window.bloom.filter.length);
-  browser.storage.local.set({"bloom_filter": window.bloom})
+  storeBloom(window.bloom);
 }
 
 

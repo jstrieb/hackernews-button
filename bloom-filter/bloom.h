@@ -55,6 +55,25 @@ void free_bloom(byte *bloom);
 
 
 /***
+ * Write a Bloom filter out to a gzip compressed file.
+ */
+void write_compressed_bloom(char *filename, byte *bloom, uint8_t num_bits);
+
+
+/***
+ * Decompress a Bloom filter in memory. Takes the compressed filter, the
+ * size of the compressed filter in bytes, and a pointer to the place the
+ * pointer to the decompressed Bloom filter will be stored. Return the size of
+ * the decompressed Bloom filter in bytes. Store a pointer to the decompressed
+ * bloom filter in the bloom argument
+ *
+ * Note that the newly allocated Bloom filter stored in *bloom must be manually
+ * freed.
+ */
+size_t decompress_bloom(byte *compressed, size_t size, byte **bloom);
+
+
+/***
  * Add data to the Bloom filter.
  */
 void add_bloom(byte *bloom, uint8_t num_bits, byte *data, uint32_t length);
