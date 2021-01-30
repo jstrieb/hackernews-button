@@ -2,8 +2,8 @@
   "manifest_version": 2,
 
   "name": "Hacker News Discussion Button",
-  "description": "Adds a button linking to the Hacker News discussion for the current page",
-  "version": "0.2",
+  "description": "Button linking to the Hacker News discussion for the current page. Preserves privacy using Bloom filters.",
+  "version": "0.3",
   "author": "Jacob Strieb",
   "icons": {
     "16": "icons/icon-16.png",
@@ -15,7 +15,7 @@
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "{eb7ac216-532c-4fa6-b17f-d1d081f9f2e1}"
+      "id": "{36225028-11da-4478-b711-ee0940433686}"
     }
   },
 
