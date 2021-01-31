@@ -102,13 +102,51 @@ function deleteStoredBloom() {
 }
 
 
-/**
+/***
  * Save the Bloom filter to local storage
  */
 function storeBloom(bloom) {
   bloom.filter = new Uint8Array(Module.HEAPU8.buffer, bloom.addr,
       Math.pow(2, bloom.num_bits - 3));
   browser.storage.local.set({"bloom_filter": bloom})
+}
+
+
+/***
+ * Fetch the latest Bloom filter(s). Modifies window.bloom
+ */
+async function fetchBloom(filename, decompress = true) {
+  console.debug("Fetching new Bloom filter...");
+  let url = ("https://github.com/jstrieb/hackernews-button/releases/latest/"
+            + `download/${filename}`);
+  let b = await fetch(url, {
+    cache: "no-cache",
+  })
+    .then(b => b.arrayBuffer())
+    .then(a => new Uint8Array(a));
+  window.bloom = {
+    filter: b,
+    // TODO: Get info about compression status from info.json
+    compressed: true,
+    num_bits: null,
+    addr: null,
+    last_downloaded: Date.now(),
+  };
+  console.debug("Fetched: ", window.bloom);
+
+  // Save the downloaded Bloom filter
+  browser.storage.local.set({"bloom_filter": window.bloom})
+
+  if (decompress) {
+    // Set bloom.addr
+    if (window.bloom.compressed) {
+      decompressBloom(window.bloom);
+      storeBloom(window.bloom);
+      console.debug("Decompressed: ", window.bloom);
+    } else {
+      newBloom(window.bloom);
+    }
+  }
 }
 
 
@@ -218,28 +256,16 @@ async function load_bloom() {
   // browser.storage.local.remove("bloom_filter")
   window.bloom = (await browser.storage.local.get("bloom_filter")).bloom_filter;
   if (!window.bloom || !window.bloom.filter) {
-    console.debug("Fetching new Bloom filter...");
-    let url = ("https://github.com/jstrieb/hackernews-button/releases/latest/"
-              + "download/hn-0.bloom");
-    let b = await fetch(url)
-      .then(r => r.blob())
-      .then(b => b.arrayBuffer())
-      .then(a => new Uint8Array(a));
-    window.bloom = {
-      filter: b,
-      // TODO: Get info about compression status from info.json
-      compressed: true,
-      num_bits: null,
-      addr: null,
-    };
-    console.debug("Fetched: ", window.bloom);
-
-    // Save the downloaded Bloom filter
-    browser.storage.local.set({"bloom_filter": window.bloom})
+    // Fetch the Bloom filter without decompressing (in this case, that happens
+    // outside the conditional in case a compressed Bloom filter was stored).
+    await fetchBloom("hn-0.bloom", false);
   }
 
-  // TODO: Fail gracefully if both attempts above to load a Bloom filter fail
-  // console.error("Couldn't load Bloom filter from local storage or the web!");
+  // Fail (semi) gracefully if both attempts above to load a Bloom filter fail
+  if (!window.bloom || !window.bloom.filter) {
+    throw "Couldn't load Bloom filter from local storage or the web!";
+    return;
+  }
 
   // Set bloom.addr
   if (window.bloom.compressed) {
