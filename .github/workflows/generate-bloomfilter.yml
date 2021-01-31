@@ -153,14 +153,16 @@ jobs:
 
           ASSETS=()
           for ASSET in *; do
-            ASSETS+=("-a" "$ASSET")
+            ASSETS+=("--attach" "$ASSET")
           done
 
+          # Two messages uses one for the title and the second for the body
           # Source:
           # https://git.io/JtfOg
           hub release create \
             "${ASSETS[@]}" \
-            -m "$(date '+%B %d, %Y')" \
+            --message "$(date '+%B %d, %Y')" \
+            --message "Updated Bloom filters for Hacker News submitted stories" \
             "$(date +%Y%m%d)"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
