@@ -186,3 +186,17 @@ int in_bloom(byte *bloom, uint8_t num_bits, byte *data, uint32_t length) {
 
   return 1;
 }
+
+
+/***
+ * Combine two Bloom filters by ORing each byte in the "new" parameter with
+ * each byte in bloom, and storing the result in bloom.
+ */
+void combine_bloom(byte *bloom, byte *new, uint8_t num_bits) {
+  // Number of bytes is 2^num_bits / 8
+  size_t num_bytes = 1 << (num_bits - 3);
+
+  for (size_t i = 0; i < num_bytes; i++) {
+    bloom[i] |= new[i];
+  }
+}

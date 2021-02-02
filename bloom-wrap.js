@@ -85,8 +85,9 @@ function canonicalizeUrl(rawUrl) {
     url.host = "en.wikipedia.org";
   }
 
-  // Drop the scheme
-  let result = url.toString().replace(/^.*:\/\//, "//");
+  // Drop the scheme and remove a trailing slash if it is still there
+  let result = url.toString().replace(/^.*:\/\//, "//")
+    .replace(/\/$/, "");
 
   return result;
 }
@@ -106,14 +107,24 @@ function deleteStoredBloom() {
  * Save the Bloom filter to local storage
  */
 function storeBloom(bloom) {
-  bloom.filter = new Uint8Array(Module.HEAPU8.buffer, bloom.addr,
+  // Save the address and set the global one to null so that it is clear it has
+  // not been allocated in WebAssembly when the Bloom filter is restored from
+  // storage
+  let addr = bloom.addr;
+  bloom.addr = null,
+
+  // Update the filter attribute from WebAssembly memory
+  bloom.filter = new Uint8Array(Module.HEAPU8.buffer, addr,
       Math.pow(2, bloom.num_bits - 3));
+
+  // Store the Bloom filter and restore the address
   browser.storage.local.set({"bloom_filter": bloom})
+    .then(() => bloom.addr = addr);
 }
 
 
 /***
- * Fetch the latest Bloom filter(s). Modifies window.bloom
+ * Fetch the latest Bloom filter(s). Returns a Bloom filter object.
  */
 async function fetchBloom(filename, decompress = true) {
   console.debug("Fetching new Bloom filter...");
@@ -124,27 +135,85 @@ async function fetchBloom(filename, decompress = true) {
   })
     .then(b => b.arrayBuffer())
     .then(a => new Uint8Array(a));
-  window.bloom = {
+  let bloom = {
     filter: b,
     // TODO: Get info about compression status from info.json
     compressed: true,
     num_bits: null,
     addr: null,
-    last_downloaded: Date.now(),
+    last_downloaded: Math.floor(Date.now() / 1000),
+    filename: filename,
   };
-  console.debug("Fetched: ", window.bloom);
-
-  // Save the downloaded Bloom filter
-  browser.storage.local.set({"bloom_filter": window.bloom})
+  console.debug("Fetched: ", bloom);
 
   if (decompress) {
     // Set bloom.addr
-    if (window.bloom.compressed) {
-      decompressBloom(window.bloom);
-      storeBloom(window.bloom);
-      console.debug("Decompressed: ", window.bloom);
+    if (bloom.compressed) {
+      decompressBloom(bloom);
+      console.debug("Decompressed: ", bloom);
     } else {
-      newBloom(window.bloom);
+      newBloom(bloom);
+    }
+  }
+
+  return bloom;
+}
+
+
+/***
+ * Update the Bloom filter(s) to the latest versions. Destructively modifies
+ * the global object window.bloom
+ */
+async function updateBloom(force = false) {
+  // If a Bloom filter has never been loaded, try to load it again
+  // NOTE: Since updateBloom is called regularly, this could get expensive if
+  // there is no Internet connection of something
+  if (!window.bloom || !window.bloom.filter) {
+    loadBloom();
+    return;
+  }
+
+  // If everything is reasonably up-to-date, don't update anything. For now, we
+  // fetch info.json every 6 hours.
+  // TODO: Parameterize update frequency with user-adjustable options
+  let diff = Math.floor(Date.now() / 1000) - window.bloom.last_downloaded;
+  if (!force && diff < 6 * 60 * 60) {
+    return;
+  }
+
+  // Get info.json to find out which Bloom filters to download
+  let infoUrl = ("https://github.com/jstrieb/hackernews-button/releases/latest"
+      + "/download/info.json");
+  let info = await fetch(infoUrl, {
+    cache: "no-cache",
+  }).then(r => r.json());
+
+  // Sort dates to the correct date range to download from. Sorted by lowest
+  // number i.e., oldest timestamp
+  let sorted = Object.keys(info.dates).sort((x, y) => Number(x) - Number(y));
+
+  // If older than the oldest by a large margin, download fresh
+  // TODO: Add condition for if the filter hasn't been downloaded yet
+  if (Number(sorted[0]) - window.bloom.last_downloaded > 31 * 24 * 60 * 60) {
+    freeBloom(window.bloom);
+    window.bloom = await fetchBloom("hn-0.bloom");
+    storeBloom(window.bloom);
+  } else {
+    for (let i = 0; i < sorted.length; i++) {
+      if (window.bloom.last_downloaded < Number(sorted[i])) {
+        // Download latest partial Bloom filter
+        let dateString = info.dates[sorted[i]];
+        let latestBloom = await fetchBloom(`hn-${dateString}-0.bloom`);
+
+        // Combine the filters and update the "last downloaded" datetime
+        combineBloom(window.bloom, latestBloom);
+        window.bloom.last_downloaded = Math.floor(Date.now() / 1000);
+
+        // Free the allocated partial Bloom filter
+        freeBloom(latestBloom);
+
+        break;
+      }
     }
   }
 }
@@ -175,6 +244,7 @@ function freeBloom(bloom) {
     ["number"],
     [bloom.addr]
   );
+  bloom.addr = null;
 }
 
 
@@ -241,6 +311,22 @@ function inBloom(bloom, url) {
 }
 
 
+/***
+ * Combine Bloom filters by destructively modifying the memory of the first one
+ */
+function combineBloom(bloom, new_bloom) {
+  if (bloom.num_bits != new_bloom.num_bits) {
+    throw "Trying to combine Bloom filters of different sizes!";
+  }
+  Module.ccall(
+    "js_combine_bloom",
+    null,
+    ["number", "number", "number"],
+    [bloom.addr, new_bloom.addr, bloom.num_bits]
+  );
+}
+
+
 
 /*******************************************************************************
  * Main function
@@ -250,7 +336,12 @@ function inBloom(bloom, url) {
  * Load the Bloom filter as soon as there is a WebAssembly runtime to load it
  * with. This is typically right when the browser/extension starts up.
  */
-async function load_bloom() {
+async function loadBloom() {
+  // If the Bloom filter is already allocated, free it
+  if (window.bloom && window.bloom.addr) {
+    freeBloom(window.bloom);
+  }
+
   // Try to get the Bloom filter out of storage, otherwise download latest. To
   // clear the stored Bloom filter while testing, from the browser console do:
   // browser.storage.local.remove("bloom_filter")
@@ -258,7 +349,13 @@ async function load_bloom() {
   if (!window.bloom || !window.bloom.filter) {
     // Fetch the Bloom filter without decompressing (in this case, that happens
     // outside the conditional in case a compressed Bloom filter was stored).
-    await fetchBloom("hn-0.bloom", false);
+    window.bloom = await fetchBloom("hn-0.bloom", false);
+
+    // Save the downloaded Bloom filter
+    let addr = window.bloom.addr;
+    window.bloom.addr = null,
+    browser.storage.local.set({"bloom_filter": window.bloom})
+      .then(() => window.bloom.addr = addr);
   }
 
   // Fail (semi) gracefully if both attempts above to load a Bloom filter fail
@@ -282,5 +379,5 @@ async function load_bloom() {
 
 // NOTE: This works because this file is run before the autogenerated bloom.js
 var Module = {
-  onRuntimeInitialized: load_bloom,
+  onRuntimeInitialized: loadBloom,
 };

@@ -95,6 +95,12 @@ int js_in_bloom(byte *bloom, uint8_t num_bits, byte *data, uint32_t length) {
 }
 
 
+EMSCRIPTEN_KEEPALIVE
+void js_combine_bloom(byte *bloom, byte *new, uint8_t num_bits) {
+  combine_bloom(bloom, new, num_bits);
+}
+
+
 
 /*******************************************************************************
  * (Empty) main function

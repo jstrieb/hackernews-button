@@ -181,6 +181,9 @@ function addLatest(urls) {
     }
   });
 
+  // Every 10 minutes, check if the Bloom filter is outdated, and update if so
+  setInterval(updateBloom, 10 * 60 * 1000);
+
   // Style the browser action button
   browser.browserAction.disable();
   browser.browserAction.setBadgeText({text: ""});

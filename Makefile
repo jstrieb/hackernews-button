@@ -135,6 +135,7 @@ bin/murmur-test.html: bin murmur.c murmur-test.c test-template.html
 		-I $(INC) \
 		-s WASM=1 \
 		-s ASSERTIONS=1 \
+		-s ALLOW_MEMORY_GROWTH=1 \
 		-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
 		--shell-file $(filter %.html, $^) \
 		-o $@
@@ -154,6 +155,7 @@ bin/bloom-test.html: bin murmur.c bloom.c bloom-test.c test-template.html
 		-I $(INC) \
 		-s WASM=1 \
 		-s ASSERTIONS=1 \
+		-s ALLOW_MEMORY_GROWTH=1 \
 		-s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
 		--shell-file $(filter %.html, $^) \
 		-s USE_ZLIB=1 \

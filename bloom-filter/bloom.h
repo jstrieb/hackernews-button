@@ -85,4 +85,14 @@ void add_bloom(byte *bloom, uint8_t num_bits, byte *data, uint32_t length);
 int in_bloom(byte *bloom, uint8_t num_bits, byte *data, uint32_t length);
 
 
+/***
+ * Combine two bloom filters. Destructively modifies the bloom parameter to
+ * become the combined filter.
+ *
+ * Both bloom and new *MUST* be the exact same size. Hence, num_bits describes
+ * the size of bloom and new.
+ */
+void combine_bloom(byte *bloom, byte *new, uint8_t num_bits);
+
+
 #endif /* BLOOM_H */

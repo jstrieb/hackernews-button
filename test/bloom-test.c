@@ -103,9 +103,6 @@ int test_in(byte *bloom, int bloom_size, char *strings[], int len) {
   }
 
   for (int i = 0; i < len; i++) {
-    // Add the string
-    add_bloom(bloom, bloom_size, (byte *)strings[i], sizes[i]);
-
     // Make sure the previous strings are still in the filter
     for (int j = 0; j < i; j++) {
       if (!in_bloom(bloom, bloom_size, (byte *)strings[j], sizes[j])) {
@@ -113,6 +110,9 @@ int test_in(byte *bloom, int bloom_size, char *strings[], int len) {
         return 0;
       }
     }
+
+    // Add the string
+    add_bloom(bloom, bloom_size, (byte *)strings[i], sizes[i]);
   }
 
   return 1;
@@ -296,6 +296,32 @@ int test_compression(byte **bloom, uint8_t size, size_t *new_size) {
 }
 
 
+/***
+ * Test combining Bloom filters
+ *
+ * TODO: Improve – test_in might not actually be confirming that it works...
+ */
+int test_combine() {
+  int success = 1;
+
+  uint8_t size = 15;
+  byte *bloom1 = new_bloom(size);
+  byte *bloom2 = new_bloom(size);
+
+  success = success && test_in(bloom1, size, input2, 5);
+  success = success && test_in(bloom2, size, input4, 17);
+  success = success && test_out(bloom1, size, input4, 17);
+
+  combine_bloom(bloom1, bloom2, size);
+  success = success && test_in(bloom1, size, input4, 17);
+
+  free(bloom1);
+  free(bloom2);
+
+  return success;
+}
+
+
 
 /*******************************************************************************
  * Main function
@@ -336,6 +362,9 @@ int main(int argc, char *argv[]) {
       break;
     }
   }
+
+  // Test combining Bloom filters
+  success = success && test_combine();
 
   // TODO: Add tests that create new bloom filters and generate many strings
   // over and over, confirming that over time the average converges to the
