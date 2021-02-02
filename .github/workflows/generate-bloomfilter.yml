@@ -41,7 +41,8 @@ jobs:
           # CSV we are attempting to process
           bq query \
             --use_legacy_sql=false \
-            'SELECT COUNT(*) FROM `bigquery-public-data.hacker_news.full`'
+            'SELECT COUNT(*) FROM `bigquery-public-data.hacker_news.full`
+             WHERE type = "story"'
 
       - name: Compile Bloom filter creation program
         run: |
@@ -81,7 +82,7 @@ jobs:
           # Used as sqlite3 date modifiers:
           # https://sqlite.org/lang_datefunc.html
           DATE_RANGES=(
-            "-1 month"
+            # "-1 month"
             "-7 days"
             "-48 hours"
           )
@@ -138,7 +139,7 @@ jobs:
           for DATE_RANGE in "${DATE_RANGES[@]}"; do
             DATE_RANGE_STR="$(echo $DATE_RANGE | sed 's/[- ]//g')"
             DATE="$(date -d "now ""$DATE_RANGE" +%s)"
-            DATES+=("$DATE_RANGE_STR=$DATE")
+            DATES+=("$DATE=$DATE_RANGE_STR")
           done
 
           jo \
