@@ -74,6 +74,16 @@ ycombinator-logo.jpg:
 		--output "$@" \
 		"https://feeds.backtracks.fm/feeds/series/cb81757a-3054-11e7-89cf-0e1b887eb36a/images/main.jpg"
 
+browser-polyfill.js:
+	curl \
+		--output "$@" \
+		"https://unpkg.com/webextension-polyfill@0.7.0/dist/browser-polyfill.js"
+
+browser-polyfill.js.map:
+	curl \
+		--output "$@" \
+		"https://unpkg.com/webextension-polyfill@0.7.0/dist/browser-polyfill.js.map"
+
 
 
 ################################################################################

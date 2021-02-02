@@ -106,20 +106,22 @@ function deleteStoredBloom() {
 /***
  * Save the Bloom filter to local storage
  */
-function storeBloom(bloom) {
+async function storeBloom(bloom) {
   // Save the address and set the global one to null so that it is clear it has
   // not been allocated in WebAssembly when the Bloom filter is restored from
   // storage
   let addr = bloom.addr;
-  bloom.addr = null,
+  bloom.addr = null;
 
   // Update the filter attribute from WebAssembly memory
-  bloom.filter = new Uint8Array(Module.HEAPU8.buffer, addr,
-      Math.pow(2, bloom.num_bits - 3));
+  if (addr) {
+    bloom.filter = new Uint8Array(Module.HEAPU8.buffer, addr,
+        Math.pow(2, bloom.num_bits - 3));
+  }
 
   // Store the Bloom filter and restore the address
-  browser.storage.local.set({"bloom_filter": bloom})
-    .then(() => bloom.addr = addr);
+  await browser.storage.local.set({"bloom_filter": bloom});
+  bloom.addr = addr;
 }
 
 
@@ -169,7 +171,7 @@ async function updateBloom(force = false) {
   // NOTE: Since updateBloom is called regularly, this could get expensive if
   // there is no Internet connection of something
   if (!window.bloom || !window.bloom.filter) {
-    loadBloom();
+    await loadBloom();
     return;
   }
 
@@ -197,7 +199,7 @@ async function updateBloom(force = false) {
   if (Number(sorted[0]) - window.bloom.last_downloaded > 31 * 24 * 60 * 60) {
     freeBloom(window.bloom);
     window.bloom = await fetchBloom("hn-0.bloom");
-    storeBloom(window.bloom);
+    await storeBloom(window.bloom);
   } else {
     for (let i = 0; i < sorted.length; i++) {
       if (window.bloom.last_downloaded < Number(sorted[i])) {
@@ -301,6 +303,10 @@ function addBloom(bloom, url) {
 
 
 function inBloom(bloom, url) {
+  if (!bloom || !bloom.addr) {
+    return false;
+  }
+
   url = canonicalizeUrl(url);
   return Module.ccall(
     "js_in_bloom",
@@ -352,10 +358,7 @@ async function loadBloom() {
     window.bloom = await fetchBloom("hn-0.bloom", false);
 
     // Save the downloaded Bloom filter
-    let addr = window.bloom.addr;
-    window.bloom.addr = null,
-    browser.storage.local.set({"bloom_filter": window.bloom})
-      .then(() => window.bloom.addr = addr);
+    await storeBloom(window.bloom);
   }
 
   // Fail (semi) gracefully if both attempts above to load a Bloom filter fail
@@ -367,7 +370,7 @@ async function loadBloom() {
   // Set bloom.addr
   if (window.bloom.compressed) {
     decompressBloom(window.bloom);
-    storeBloom(window.bloom);
+    await storeBloom(window.bloom);
     console.debug("Decompressed: ", window.bloom);
   } else {
     newBloom(window.bloom);

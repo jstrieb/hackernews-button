@@ -26,6 +26,8 @@
     "unlimitedStorage"
   ],
 
+  "content_security_policy": "script-src 'self' 'wasm-eval'; object-src 'self'",
+
   "browser_action": {
     "default_icon": {
       "16": "icons/icon-16.png",
@@ -45,7 +47,8 @@
     "open_in_new_tab": {
       "suggested_key": {
         "default": "Ctrl+Shift+Y"
-      }
+      },
+      "description": "Open Hacker News discussion in a new tab"
     }
   },
 
@@ -53,7 +56,9 @@
     "matches": [
       "*://news.ycombinator.com/*"
     ],
-    "js": ["add-latest.js"]
+    "js": [
+      "add-latest.js"
+    ]
   }],
 
   "background": {

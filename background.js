@@ -188,5 +188,8 @@ function addLatest(urls) {
   browser.browserAction.disable();
   browser.browserAction.setBadgeText({text: ""});
   browser.browserAction.setBadgeBackgroundColor({color: "#f0652f"});
-  browser.browserAction.setBadgeTextColor({color: "white"});
+  // Will not run in Chrome
+  if (browser.browserAction.setBadgeTextColor) {
+    browser.browserAction.setBadgeTextColor({color: "white"});
+  }
 })();
