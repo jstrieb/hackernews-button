@@ -7,11 +7,11 @@
 
 name: Generate Bloom Filters
 
-# Run once every 24 hours because that is how often the BigQuery database seems
-# to be updated. Also run when manually triggered.
+# Run once every 12 hours because the BigQuery database is updated once
+# every 24 hours, but I don't know when. Also run when manually triggered.
 on:
   schedule:
-    - cron: "5 0 * * *"
+    - cron: "5 */12 * * *"
   workflow_dispatch:
 
 
