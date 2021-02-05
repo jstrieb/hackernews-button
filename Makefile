@@ -52,6 +52,8 @@ EXTENSION_FILES = manifest.json \
 									bloom.wasm \
 									bloom-wrap.js \
 									add-latest.js \
+									browser-polyfill.js \
+									browser-polyfill.js.map \
 									icons
 
 hackernews-button.zip: $(EXTENSION_FILES)
@@ -83,6 +85,12 @@ browser-polyfill.js.map:
 	curl \
 		--output "$@" \
 		"https://unpkg.com/webextension-polyfill@0.7.0/dist/browser-polyfill.js.map"
+
+.PHONY: chrome-debug
+chrome-debug: hackernews-button.zip
+	mkdir -p ../hn-discussion-chrome
+	rm -rf ../hn-discussion-chrome/*
+	unzip $^ -d ../hn-discussion-chrome/
 
 
 

@@ -58,6 +58,7 @@
       "*://news.ycombinator.com/*"
     ],
     "js": [
+      "browser-polyfill.js",
       "add-latest.js"
     ]
   }],
