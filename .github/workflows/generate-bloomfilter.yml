@@ -11,7 +11,7 @@ name: Generate Bloom Filters
 # every 24 hours, but I don't know when. Also run when manually triggered.
 on:
   schedule:
-    - cron: "5 */12 * * *"
+    - cron: "5 0 * * *"
   workflow_dispatch:
 
 
@@ -146,11 +146,18 @@ jobs:
             -p \
             thesholds=$(jo -a "${THRESHOLDS[@]}") \
             dates=$(jo "${DATES[@]}") \
+            version="0.4" \
             > generated/info.json
 
       - name: Create Release
         run: |
           cd generated
+
+          # Keep the latest extension in the next release
+          curl \
+            --location \
+            --output "hackernews-button.xpi" \
+            "https://github.com/jstrieb/hackernews-button/releases/latest/download/hackernews-button.xpi"
 
           ASSETS=()
           for ASSET in *; do
@@ -162,8 +169,8 @@ jobs:
           # https://git.io/JtfOg
           hub release create \
             "${ASSETS[@]}" \
-            --message "$(date '+%B %d, %Y')" \
-            --message "Updated Bloom filters for Hacker News submitted stories" \
+            --message "$(date '+%B %d, %Y') Bloom filters" \
+            --message "Updated Bloom filters for Hacker News submitted stories for $(date '+%B %d,%^Y')" \
             "$(date +%Y%m%d)"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

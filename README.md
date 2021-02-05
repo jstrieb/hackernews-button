@@ -9,6 +9,7 @@ page and preserves privacy with Bloom filters.
 
 <!-- TODO: add link to Mozilla web store and screenshots -->
 Install the browser extension and restart Firefox.
+- [Download from GitHub](https://github.com/jstrieb/hackernews-button/releases/latest/download/hackernews-button.xpi)
 
 The extension will light up bright orange when the current page has been
 previously posted to Hacker News.
