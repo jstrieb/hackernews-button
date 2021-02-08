@@ -126,9 +126,28 @@ async function storeBloom(bloom) {
 
 
 /***
+ * Fetch auto-generated Bloom filter metadata.
+ */
+async function fetchInfo() {
+  // Get info.json to find out which Bloom filters to download
+  let infoUrl = ("https://github.com/jstrieb/hackernews-button/releases/latest"
+      + "/download/info.json");
+  let info = await fetch(infoUrl, {
+    cache: "no-cache",
+  }).then(r => r.json());
+
+  return info;
+}
+
+
+/***
  * Fetch the latest Bloom filter(s). Returns a Bloom filter object.
  */
 async function fetchBloom(filename, decompress = true) {
+  // TODO: Fetch info outside and pass the object in
+  console.debug("Fetching Bloom filter info...");
+  let info = await fetchInfo();
+
   console.debug("Fetching new Bloom filter...");
   let url = ("https://github.com/jstrieb/hackernews-button/releases/latest/"
             + `download/${filename}`);
@@ -137,13 +156,23 @@ async function fetchBloom(filename, decompress = true) {
   })
     .then(b => b.arrayBuffer())
     .then(a => new Uint8Array(a));
+
   let bloom = {
+    // Filter as an ArrayBuffer
     filter: b,
-    // TODO: Get info about compression status from info.json
-    compressed: true,
+    // Boolean representing compression status
+    compressed: info.compressed,
+    // Number of bits in the filter IDs -- number of bytes is 2^(num_bits - 3)
     num_bits: null,
+    // WebAssembly heap-allocated Bloom filter address
     addr: null,
+    // Date of most recent filter download
     last_downloaded: Math.floor(Date.now() / 1000),
+    // Date of most recent filter generation
+    last_generated: info.date_generated,
+    // Date of anticipated filter regeneration
+    next_generated: info.next_generated,
+    // Filter filename
     filename: filename,
   };
   console.debug("Fetched: ", bloom);
@@ -169,54 +198,64 @@ async function fetchBloom(filename, decompress = true) {
 async function updateBloom(force = false) {
   // If a Bloom filter has never been loaded, try to load it again
   // NOTE: Since updateBloom is called regularly, this could get expensive if
-  // there is no Internet connection of something
-  if (!window.bloom || !window.bloom.filter) {
+  // there is no Internet connection or something
+  if (!window.bloom || !window.bloom.filter || !window.bloom.addr) {
     await loadBloom();
     return;
   }
 
-  // If everything is reasonably up-to-date, don't update anything. For now, we
-  // fetch info.json every 6 hours.
-  // TODO: Parameterize update frequency with user-adjustable options
-  let diff = Math.floor(Date.now() / 1000) - window.bloom.last_downloaded;
-  if (!force && diff < 6 * 60 * 60) {
+  // If the anticipated next generated time hasn't happened yet, don't check
+  // for anything
+  let now = Math.floor(Date.now() / 1000);
+  if (!force && window.bloom.next_generated > now) {
     return;
   }
 
   // Get info.json to find out which Bloom filters to download
-  let infoUrl = ("https://github.com/jstrieb/hackernews-button/releases/latest"
-      + "/download/info.json");
-  let info = await fetch(infoUrl, {
-    cache: "no-cache",
-  }).then(r => r.json());
+  let info = await fetchInfo();
+
+  // If the downloaded info.json is the same or older than the last generated
+  // one, make sure the next_generated time is set properly. Theoretically,
+  // this should be an unnecessary check if the next_generated prediction is
+  // incorrect
+  if (!force && info.date_generated <= window.bloom.last_generated) {
+    window.bloom.next_generated = info.next_generated;
+    return;
+  }
 
   // Sort dates to the correct date range to download from. Sorted by lowest
-  // number i.e., oldest timestamp
-  let sorted = Object.keys(info.dates).sort((x, y) => Number(x) - Number(y));
+  // number i.e., oldest timestamp first
+  let sorted = Object.keys(info.dates).map(Number).sort((x, y) => x - y);
 
   // If older than the oldest by a large margin, download fresh
-  // TODO: Add condition for if the filter hasn't been downloaded yet
-  if (Number(sorted[0]) - window.bloom.last_downloaded > 31 * 24 * 60 * 60) {
+  if (sorted[0] - window.bloom.last_downloaded > 7 * 24 * 60 * 60) {
     freeBloom(window.bloom);
     window.bloom = await fetchBloom("hn-0.bloom");
     await storeBloom(window.bloom);
-  } else {
-    for (let i = 0; i < sorted.length; i++) {
-      if (window.bloom.last_downloaded < Number(sorted[i])) {
-        // Download latest partial Bloom filter
-        let dateString = info.dates[sorted[i]];
-        let latestBloom = await fetchBloom(`hn-${dateString}-0.bloom`);
+  }
 
-        // Combine the filters and update the "last downloaded" datetime
-        combineBloom(window.bloom, latestBloom);
-        window.bloom.last_downloaded = Math.floor(Date.now() / 1000);
+  // Otherwise, pick the Bloom filter with the date closest to the
+  // last_generated date to combine with
+  else {
+    // Re-sort based on which is closest to the last_generated date
+    let l = window.bloom.last_generated;
+    sorted = sorted.sort((x, y) => Math.abs(x - l) - Math.abs(y - l));
 
-        // Free the allocated partial Bloom filter
-        freeBloom(latestBloom);
+    // Download latest partial Bloom filter
+    let dateString = info.dates[sorted[0]];
+    let latestBloom = await fetchBloom(`hn-${dateString}-0.bloom`);
 
-        break;
-      }
-    }
+    // Combine the filters and update the datetimes
+    combineBloom(window.bloom, latestBloom);
+    window.bloom.last_downloaded = latestBloom.last_downloaded;
+    window.bloom.last_generated = latestBloom.last_generated;
+    window.bloom.next_generated = latestBloom.next_generated;
+
+    // Free the allocated partial Bloom filter
+    freeBloom(latestBloom);
+
+    // Store the updated Bloom filter
+    await storeBloom(window.bloom);
   }
 }
 
@@ -292,8 +331,12 @@ function decompressBloom(bloom) {
 
 
 function addBloom(bloom, url) {
+  if (!bloom || !bloom.addr) {
+    return;
+  }
+
   url = canonicalizeUrl(url);
-  return Module.ccall(
+  Module.ccall(
     "js_add_bloom",
     null,
     ["number", "number", "string", "number"],
@@ -304,6 +347,10 @@ function addBloom(bloom, url) {
 
 function inBloom(bloom, url) {
   if (!bloom || !bloom.addr) {
+    // This is particularly likely to happen on news.ycombinator.com sites
+    // where new stories have been added to the Bloom filter, and the
+    // membership check happens while the filter is being saved to local
+    // storage
     return false;
   }
 

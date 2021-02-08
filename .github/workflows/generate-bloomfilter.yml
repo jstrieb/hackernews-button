@@ -158,14 +158,20 @@ jobs:
           done
 
           # 24 hours used in next_generated since this runs every 24 hours and
-          # takes about 10 minutes to complete
+          # takes 10 to 20 minutes to complete
           jo \
             -p \
             thesholds=$(jo -a "${THRESHOLDS[@]}") \
             dates=$(jo "${DATES[@]}") \
             version="0.4" \
+            compressed="true" \
             date_generated="$(date +%s)" \
-            next_generated="$(date -d "now +24 hours +10 minutes" +%s)" \
+            next_generated="$(date -d "now +24 hours +20 minutes" +%s)" \
+            last_submitted="$(sqlite3 \
+               -csv \
+               data.db \
+               "SELECT CAST(time AS INT) AS inttime
+                FROM hn ORDER BY inttime DESC LIMIT 1")" \
             > generated/info.json
 
       - name: Create Release
