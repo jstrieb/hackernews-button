@@ -1,7 +1,7 @@
 # Hacker News Discussion Button
 
-Firefox extension that links to the Hacker News discussion for the current
-page and preserves privacy with Bloom filters.
+Firefox extension that links to the [Hacker News](https://news.ycombinator.com)
+discussion for the current page and preserves privacy with Bloom filters.
 
 
 
@@ -10,6 +10,8 @@ page and preserves privacy with Bloom filters.
 <!-- TODO: add link to Mozilla web store and screenshots -->
 Install the browser extension and restart Firefox.
 - [Download from GitHub](https://github.com/jstrieb/hackernews-button/releases/latest/download/hackernews-button.xpi)
+
+---
 
 The extension will light up bright orange when the current page has been
 previously posted to Hacker News.
@@ -42,10 +44,10 @@ sending and receiving extraneous API requests.
 
 To solve this problem, this extension uses a data structure called a [Bloom
 filter](https://en.wikipedia.org/wiki/Bloom_filter) to protect your privacy.
-Bloom filters can be thought of as a super condensed way to represent the
-fingerprints of a long list of strings. In this way, you can download the Bloom
+Bloom filters can be thought of as a super condensed representation of the
+fingerprints of a long list of URLs. In this way, you can download the Bloom
 filter once (with periodic updates), and check if it contains the current
-website's fingerprint without making requests over the Internet.
+website's URL fingerprint without making any requests over the Internet.
 
 If the current page has been on Hacker News, the extension lights up and
 becomes clickable. Clicking it retrieves a link to the best discussion for the
@@ -55,8 +57,8 @@ page and navigates the browser there.
 the discussion. The improvement offered by using Bloom filters is to not send
 *all* of the sites you visit to the API, but *some* data still need to be sent
 to retrieve the link to the discussion. Moreover, by default an updated Bloom
-filter is downloaded once every 24 hours from GitHub. It is possible they may
-maintain logs of who downloads these releases.
+filter is downloaded once every 24 hours from GitHub. It is possible that
+GitHub maintains logs of who downloads these releases.
 
 
 
@@ -64,7 +66,7 @@ maintain logs of who downloads these releases.
 
 Browser extensions have a lot of power to harm users, so it is important to
 understand what you are running. To that end, I provide a description of how to
-read this code to promote auditing it before running it.
+read this code. Please audit the code before running it.
 
 This repository has three parts: code to pull Hacker News data and generate
 Bloom filters from it, code for the browser extension, and a single
@@ -89,11 +91,10 @@ Files to read:
 - [`bloom-filter/bloom.c`](https://github.com/jstrieb/hackernews-button/blob/master/bloom-filter/bloom.c)
 - [`test/bloom-test.c`](https://github.com/jstrieb/hackernews-button/blob/master/test/bloom-test.c)
 
-The code for Bloom filters is implemented once in C. This code is used in a
+The code for Bloom filters is implemented in C. This code is used in a
 command-line C program to generate Bloom filters, which is compiled using
-`gcc`. It is also used in a wrapper library by the browser extension to decode
-and use Bloom filters, which is compiled to WebAssembly using `emscripten`
-(`emcc` in the `Makefile`).
+`gcc`. It is also used by the browser extension in a wrapper library, which is
+compiled to WebAssembly using `emscripten` (`emcc` in the `Makefile`).
 
 The [`test`](https://github.com/jstrieb/hackernews-button/tree/master/test)
 folder includes tests for various parts of the Bloom filter library to ensure
@@ -107,13 +108,13 @@ Files to read:
 - [`canonicalize.py`](https://github.com/jstrieb/hackernews-button/blob/master/canonicalize.py)
 - [`bloom-filter/bloom-create.c`](https://github.com/jstrieb/hackernews-button/blob/master/bloom-filter/bloom-create.c)
 
-Bloom filters are generated on a schedule using GitHub Actions. This process is
-controlled by a GitHub Actions workflow. At a high level, this process pulls
-down relevant data from the [Hacker News BigQuery
-dataset](https://console.cloud.google.com/marketplace/details/y-combinator/hacker-news), does some
-preprocessing, normalizes ("canonicalizes") URLs, and feeds them to a
-command-line Bloom filter generator. Generated Bloom filters are uploaded as
-[GitHub Releases](https://github.com/jstrieb/hackernews-button/releases) so
+Bloom filters are regularly regenerated on a schedule, mediated by a GitHub
+Actions workflow. At a high level, this process pulls down relevant data from
+the [Hacker News BigQuery
+dataset](https://console.cloud.google.com/marketplace/details/y-combinator/hacker-news),
+does some preprocessing, normalizes ("canonicalizes") URLs, and feeds them to
+the command-line Bloom filter generator. Generated Bloom filters are uploaded
+as [GitHub Releases](https://github.com/jstrieb/hackernews-button/releases) so
 users running the extension can download the latest ones.
 
 Since Bloom filters can only match exact strings, it is helpful to
@@ -122,13 +123,14 @@ words, because multiple URLs often point to the same page,
 [`canonicalize.py`](https://github.com/jstrieb/hackernews-button/blob/master/canonicalize.py)
 is useful for ensuring that slightly different URLs submitted to Hacker News
 for the current page still match in the Bloom filter. Unfortunately, this
-process is inherently imperfect.
+process is inherently imperfect. Opening issues with suggested improvements to
+the URL canonicalization process are appreciated!
 
 For actually reading strings, adding them to Bloom filters, and writing
 (compressed) Bloom filters, we compile and use
 [`bloom-create.c`](https://github.com/jstrieb/hackernews-button/blob/master/bloom-filter/bloom-create.c).
-This takes some command-line arguments, and then reads from standard input or a
-file, parses the input, and outputs a Bloom filter.
+This takes some command-line arguments, and then reads from standard input,
+parses the line-delimited strings, and outputs a Bloom filter.
 
 ## Browser Extension
 
@@ -141,9 +143,9 @@ Files to read:
 
 The
 [manifest](https://github.com/jstrieb/hackernews-button/blob/master/manifest.json)
-sets up the whole extension. It attaches keyboard commands to events and runs a
-page with background scripts, which do most of the heavy lifting. It also runs
-a small content script on `news.ycombinator.com` pages.
+connects all parts of the extension together. It attaches keyboard commands to
+events and runs a page with background scripts, which do most of the heavy
+lifting. It also runs a small content script on `news.ycombinator.com` pages.
 
 There are two important background scripts.
 [`background.js`](https://github.com/jstrieb/hackernews-button/blob/master/background.js)
@@ -157,11 +159,12 @@ to either load a Bloom filter from local storage, or download the latest one
 from GitHub.
 
 The content script that runs on `news.ycombinator.com` pages extracts "story"
-URLs from the pages and sends them to be added to the Bloom filter. This is
-useful because the Bloom filters only update every 24 hours at most, so adding
-stories to the Bloom filter this way makes it possible to use the extension to
-navigate back to the comments after reading recent posts. This would otherwise
-not be possible until the Bloom filter is updated many hours later.
+URLs from the pages and adds them to the Bloom filter. This is useful because
+the Bloom filters only update every 24 hours at most (as limited by the
+frequency of BigQuery dataset updates), so adding stories to the Bloom filter
+this way makes it possible to use the extension to view the discussion for
+recently-submitted posts. This would otherwise not be possible until the Bloom
+filter is updated many hours later.
 
 </details>
 
@@ -185,7 +188,7 @@ because releasing a browser extension means I have a (*moral*, not *legal*
 responsibility for the security of everyone who installs it. As a result,
 vetting random pull requests is typically not worth the effort unless they
 address an issue that has been discussed beforehand. I'm happy to have others'
-support, just ask first!
+support, just ask first – open an issue to do so.
 
 
 
@@ -212,10 +215,14 @@ support, just ask first!
 
 # Known Issues
 
-There is currently no version of this extension for Google Chrome. To read more
-and discuss, check out the relevant issue
-[(#1)](https://github.com/jstrieb/hackernews-button/issues/1).
-
+- There is currently no version of this extension for Google Chrome. To read
+  more and discuss, check out the relevant issue
+  [(#1)](https://github.com/jstrieb/hackernews-button/issues/1).
+- The [URL
+  canonicalization](https://github.com/jstrieb/hackernews-button/blob/master/canonicalize.py)
+  is highly imperfect. There will inevitably be false negatives in Bloom filter
+  results. Suggestions for improving canonicalization in general, or for
+  specific sites, are welcome!
 
 
 # Support the Project
