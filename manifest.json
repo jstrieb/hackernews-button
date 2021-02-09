@@ -3,7 +3,7 @@
 
   "name": "Hacker News Discussion Button",
   "description": "Links to the Hacker News discussion for the current page. Preserves privacy.",
-  "version": "0.4",
+  "version": "0.5",
   "author": "Jacob Strieb",
   "homepage_url": "https://github.com/jstrieb/hackernews-discussion",
   "icons": {
