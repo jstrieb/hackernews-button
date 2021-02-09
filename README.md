@@ -13,8 +13,8 @@ Install the browser extension and restart Firefox.
 
 ---
 
-The extension will light up bright orange when the current page has been
-previously posted to Hacker News.
+The extension will light up bright orange when the current page has previously
+been posted to Hacker News.
 - Clicking the extension will open the Hacker News discussion.
 - Clicking the extension with the scroll wheel will open the discussion in a
   new tab.
@@ -48,6 +48,42 @@ Bloom filters can be thought of as a super condensed representation of the
 fingerprints of a long list of URLs. In this way, you can download the Bloom
 filter once (with periodic updates), and check if it contains the current
 website's URL fingerprint without making any requests over the Internet.
+
+<details>
+
+<summary>Click to read additional Bloom filter details</summary>
+
+Bloom filters are probabilistic data structures, which means that when you
+query whether a string is in the set represented by the Bloom filter, the
+response from the data structure is either "no," or "probably yes." Bloom
+filters have two parameters that can be tuned to minimize the likelihood of
+false positive results: the size of the filter (the number of bits), and the
+number of hashes used to obtain a fingerprint of each item.
+
+Based on calculations performed using this [Bloom filter
+calculator](https://hur.st/bloomfilter/?n=4M&p=&m=16MiB&k=23), the Bloom
+filters used by this Firefox extension occupy 16MB of space and use 23 hash
+functions. Since (at the time of this release) there are approximately 4
+million submitted Hacker News stories, this gives a 1 in 10 million chance of a
+false positive match on the Bloom filter. This probability gradually increases
+to 1 in 26,000 as the number of submissions approaches 6 million, and becomes 1
+in 850 by the time there have been 8 million Hacker News story submissions. At
+that point, it will likely be worthwhile to consider increasing the size of the
+Bloom filter.
+
+16MB was chosen as the Bloom filter size, and the number of hashes was adjusted
+around it. This size is convenient because it is not too large for an initial
+download of multiple Bloom filters. Additionally, 16MB Bloom filters
+representing smaller time windows (e.g. submissions from the last 24 hours) are
+very sparse, and thus compress extremely well. For example, the Bloom filter
+representing submissions from the last 24 hours compresses from 16MB to about
+50KB. Though the false positive rate could be further reduced and
+future-proofed, doubling the Bloom filter size to 32MB is a significant
+increase, even with compression.
+
+---
+
+</details>
 
 If the current page has been on Hacker News, the extension lights up and
 becomes clickable. Clicking it retrieves a link to the best discussion for the
@@ -260,6 +296,7 @@ This project would not exist in its current form without:
 - Logan Snow ([@lsnow99](https://github.com/lsnow99))
 - [Amy Liu](https://www.linkedin.com/in/amyjl/)
 - [Hacker News](https://news.ycombinator.com)
+- Thomas Hurst's [Bloom filter calculator](https://hur.st/bloomfilter/)
 - [zlib](https://zlib.net)
 - [MurmurHash](https://github.com/aappleby/smhasher) and Austin Appleby
 - [GitHub Actions](https://github.com/features/actions)
