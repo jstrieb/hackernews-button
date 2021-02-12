@@ -97,9 +97,9 @@ function canonicalizeUrl(rawUrl) {
  * Delete the locally-stored Bloom filter. Useful for debugging from the
  * console.
  */
-function deleteStoredBloom() {
-  browser.storage.local.remove("bloom_filter");
-  browser.storage.local.get().then(console.log);
+async function deleteStoredBloom() {
+  await browser.storage.local.remove("bloom_filter");
+  await browser.storage.local.get().then(console.log);
 }
 
 
@@ -107,6 +107,15 @@ function deleteStoredBloom() {
  * Save the Bloom filter to local storage
  */
 async function storeBloom(bloom) {
+  // Skip if storing is already in progress
+  if (!bloom || bloom.currently_storing) {
+    return;
+  }
+
+  // Set the semaphore so it is not stored by another call to this function
+  // while bloom.addr is set to null
+  bloom.currently_storing = true;
+
   // Save the address and set the global one to null so that it is clear it has
   // not been allocated in WebAssembly when the Bloom filter is restored from
   // storage
@@ -122,6 +131,9 @@ async function storeBloom(bloom) {
   // Store the Bloom filter and restore the address
   await browser.storage.local.set({"bloom_filter": bloom});
   bloom.addr = addr;
+
+  // Unset the semaphore
+  bloom.currently_storing = false;
 }
 
 
@@ -174,6 +186,8 @@ async function fetchBloom(filename, decompress = true) {
     next_generated: info.next_generated,
     // Filter filename
     filename: filename,
+    // Semaphore for whether it is currently being stored
+    currently_storing: false,
   };
   console.debug("Fetched: ", bloom);
 
@@ -346,11 +360,10 @@ function addBloom(bloom, url) {
 
 
 function inBloom(bloom, url) {
-  if (!bloom || !bloom.addr) {
-    // This is particularly likely to happen on news.ycombinator.com sites
-    // where new stories have been added to the Bloom filter, and the
-    // membership check happens while the filter is being saved to local
-    // storage
+  if (!bloom || bloom.currently_storing || !bloom.addr) {
+    // This typically happens on news.ycombinator.com sites where new stories
+    // have been added to the Bloom filter, and the membership check happens
+    // while the filter is being saved to local storage
     return false;
   }
 

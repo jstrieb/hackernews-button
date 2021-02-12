@@ -92,7 +92,7 @@ function handleActionClicked(tab, onClickData) {
   // https://www.youtube.com/watch?v=-pdSjBPH3zM
   // I suspect the "=-" leads to treating "-" as an exclusion operator somehow
   // https://www.algolia.com/doc/api-reference/api-parameters/advancedSyntax
-  let tab_url = canonicalizeUrl(tab.url).replace("=-", "=");
+  let tab_url = encodeURIComponent(canonicalizeUrl(tab.url).replace("=-", "="));
 
   // Only get the discussion URL if the button is clicked by the user
   fetch(`https://hn.algolia.com/api/v1/search?tags=story&query=${tab_url}`)
@@ -151,12 +151,15 @@ function handleActionClicked(tab, onClickData) {
  *
  * This function is called when a content script runs on news.ycombinator.com
  * and posts a message with the URLs to add.
+ *
+ * TODO: Only handle certain messages
  */
 function addLatest(urls) {
   urls.forEach(u => addBloom(window.bloom, u));
 
   // Save the updated Bloom filter
-  storeBloom(window.bloom);
+  storeBloom(window.bloom)
+    .catch(e => console.error(e));
 }
 
 

@@ -84,6 +84,7 @@ jobs:
              data.db \
              "SELECT CAST(time AS INT) AS inttime
               FROM hn ORDER BY inttime DESC LIMIT 1")
+          # TODO: Make this accurate -- not sure why but it's inaccurate now
           printf \
             "Last story submitted %d hours ago\n" \
             $((($(date +%s) - LATEST) / 3600))
@@ -150,6 +151,8 @@ jobs:
           done
 
           # Output a JSON file with information about the thresholds and dates
+          #
+          # TODO: Fix to use $LATEST instead of now
           DATES=()
           for DATE_RANGE in "${DATE_RANGES[@]}"; do
             DATE_RANGE_STR="$(echo $DATE_RANGE | sed 's/[- ]//g')"

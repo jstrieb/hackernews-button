@@ -259,6 +259,10 @@ support, just ask first – open an issue to do so.
   is highly imperfect. There will inevitably be false negatives in Bloom filter
   results. Suggestions for improving canonicalization in general, or for
   specific sites, are welcome!
+- If the button is clicked, Algolia search tries to return the "best"
+  submission for a given URL. Often this is not the latest submission, but the
+  one with the most points.
+
 
 
 # Support the Project
@@ -266,8 +270,8 @@ support, just ask first – open an issue to do so.
 There are a few ways to support this project.
 
 Most importantly: show your support by starring it and following me on GitHub.
-These things motivate me both to focus on this project instead of other work,
-and to keep sharing what I make with other people. In the same vein, please
+These things motivate me both to focus on this project instead of others, and
+to keep sharing what I make with other people. In the same vein, please
 consider sharing the project with others.
 
 Stars on GitHub also help me gauge who is making use of the project – since I
