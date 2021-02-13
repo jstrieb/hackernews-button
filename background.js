@@ -148,10 +148,15 @@ function handleActionClicked(tab, onClickData) {
  *
  * This function is called when a content script runs on news.ycombinator.com
  * and posts a message with the URLs to add.
- *
- * TODO: Only handle certain messages
  */
-function addLatest(urls) {
+function addLatest(message) {
+  if (message.type != "add_stories") {
+    return;
+  }
+
+  // TODO: Remove when multiple Bloom filters are implemented
+  let urls = message.stories.map(s => s.url);
+
   urls.forEach(u => addBloom(window.bloom, u));
 
   // Save the updated Bloom filter
