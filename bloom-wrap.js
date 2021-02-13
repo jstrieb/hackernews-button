@@ -419,6 +419,8 @@ async function loadBloom() {
 
     // Save the downloaded Bloom filter
     await storeBloom(window.bloom);
+  } else {
+    window.bloom.currently_storing = false;
   }
 
   // Fail (semi) gracefully if both attempts above to load a Bloom filter fail

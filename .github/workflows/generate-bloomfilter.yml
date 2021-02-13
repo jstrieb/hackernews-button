@@ -11,7 +11,8 @@ name: Generate Bloom Filters
 # every 24 hours, but I don't know when. Also run when manually triggered.
 on:
   schedule:
-    - cron: "5 0 * * *"
+    # This time is based loosely around when the BigQuery data updates
+    - cron: "5 16 * * *"
   workflow_dispatch:
 
 
@@ -166,7 +167,7 @@ jobs:
             -p \
             thesholds=$(jo -a "${THRESHOLDS[@]}") \
             dates=$(jo "${DATES[@]}") \
-            version="0.4" \
+            version="0.6" \
             compressed="true" \
             date_generated="$(date +%s)" \
             next_generated="$(date -d "now +24 hours +20 minutes" +%s)" \

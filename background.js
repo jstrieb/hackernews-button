@@ -67,9 +67,6 @@ function handleTabUpdated(tabId, changeInfo, tab) {
     return;
   }
 
-  // Remove the hash when checking bloom filter membership
-  tab_url.hash = ""
-
   if (!inBloom(window.bloom, tab_url.toString())) {
     deactivateBadge(tab.id);
     return;
@@ -172,8 +169,10 @@ function addLatest(urls) {
  * Main procedure function, called on extension initialization
  */
 (() => {
+  // TODO: Remove, or uncomment if the tablist is used again
+  // browser.tabs.onRemoved.addListener(tabId => delete tabs[tabId]);
+
   // Set up listeners
-  browser.tabs.onRemoved.addListener(tabId => delete tabs[tabId]);
   browser.tabs.onUpdated.addListener(handleTabUpdated);
   browser.browserAction.onClicked.addListener(handleActionClicked);
   browser.runtime.onMessage.addListener(addLatest);
