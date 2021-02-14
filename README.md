@@ -263,6 +263,11 @@ support, just ask first – open an issue to do so.
   submission for a given URL. Often this is not the latest submission, but the
   one with the most points.
 
+  This also means that if the button is clicked for very recently submitted
+  stories (when browsing [new](https://news.ycombinator.com/newest), for
+  example), Algolia may not have indexed the story yet, causing the redirect to
+  fail.
+
 
 
 # Support the Project

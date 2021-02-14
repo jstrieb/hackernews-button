@@ -155,11 +155,7 @@ async function fetchInfo() {
 /***
  * Fetch the latest Bloom filter(s). Returns a Bloom filter object.
  */
-async function fetchBloom(filename, decompress = true) {
-  // TODO: Fetch info outside and pass the object in
-  console.debug("Fetching Bloom filter info...");
-  let info = await fetchInfo();
-
+async function fetchBloom(filename, info, decompress = true) {
   console.debug("Fetching new Bloom filter...");
   let url = ("https://github.com/jstrieb/hackernews-button/releases/latest/"
             + `download/${filename}`);
@@ -244,7 +240,7 @@ async function updateBloom(force = false) {
   // If older than the oldest by a large margin, download fresh
   if (sorted[0] - window.bloom.last_downloaded > 7 * 24 * 60 * 60) {
     freeBloom(window.bloom);
-    window.bloom = await fetchBloom("hn-0.bloom");
+    window.bloom = await fetchBloom("hn-0.bloom", info);
     await storeBloom(window.bloom);
   }
 
@@ -257,7 +253,7 @@ async function updateBloom(force = false) {
 
     // Download latest partial Bloom filter
     let dateString = info.dates[sorted[0]];
-    let latestBloom = await fetchBloom(`hn-${dateString}-0.bloom`);
+    let latestBloom = await fetchBloom(`hn-${dateString}-0.bloom`, info);
 
     // Combine the filters and update the datetimes
     combineBloom(window.bloom, latestBloom);
@@ -413,9 +409,12 @@ async function loadBloom() {
   // browser.storage.local.remove("bloom_filter")
   window.bloom = (await browser.storage.local.get("bloom_filter")).bloom_filter;
   if (!window.bloom || !window.bloom.filter) {
+    console.debug("Fetching Bloom filter info...");
+    let info = await fetchInfo();
+
     // Fetch the Bloom filter without decompressing (in this case, that happens
     // outside the conditional in case a compressed Bloom filter was stored).
-    window.bloom = await fetchBloom("hn-0.bloom", false);
+    window.bloom = await fetchBloom("hn-0.bloom", info, false);
 
     // Save the downloaded Bloom filter
     await storeBloom(window.bloom);
