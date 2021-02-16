@@ -16,8 +16,10 @@
  */
 function sendLatest() {
   let stories = Array.from(document.querySelectorAll(".storylink"));
-  let scores = Array.from(document.querySelectorAll(".score"));
-  if (stories.length != scores.length) {
+  let scoreParents = Array.from(document.querySelectorAll(".subtext"));
+  if (stories.length != scoreParents.length) {
+    console.error("Different number of story links and scores!");
+    console.log(stories, scoreParents);
     throw "Different number of story links and scores!";
   }
 
@@ -28,7 +30,10 @@ function sendLatest() {
 
   for (let i = 0; i < stories.length; i++) {
     let storyNode = stories[i];
-    let scoreNode = scores[i];
+    let scoreNode = scoreParents[i].querySelector(".score");
+    if (!scoreNode) {
+      continue;
+    }
     let score = Number(scoreNode.innerText.replace(/\s+points?/, ""));
 
     message.stories.push({

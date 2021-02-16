@@ -115,6 +115,8 @@ function handleActionClicked(tab, onClickData) {
         // this, using the extension on https://github.com/ returns a result
         // for a GitHub blog post, not the post using the GitHub homepage as
         // the story URL
+        //
+        // TODO: Match exact path?
         return (url.host === hit_url.host
                 && ((url.pathname === "/" && hit_url.pathname === "/")
                  || (url.pathname !== "/" && hit_url.pathname !== "/")));
