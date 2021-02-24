@@ -2,10 +2,15 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <!-- TODO: Should this be styled differently? -->
   </head>
   <body>
-    <form class="browser-style">
+    <div class="browser-style">
       <button id="reset" class="browser-style">Reset Bloom filter</button>
+    </div>
+    <form class="browser-style">
+      <label class="browser-style" for="debug-mode">Enable Debug Logging</label>
+      <input class="browser-style" type="checkbox" id="debug-mode">
     </form>
     <script src="options.js"></script>
   </body>

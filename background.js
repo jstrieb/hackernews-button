@@ -45,9 +45,25 @@ function deactivateBadge(tabId) {
 }
 
 
+/***
+ * Load settings
+ */
+async function loadSettings() {
+  // Load settings
+  window.settings = (await browser.storage.local.get("settings")).settings;
+
+  // Set default settings values if necessary
+  if (!window.settings) {
+    window.settings = {
+      debug_mode: false,
+    };
+  }
+}
+
+
 
 /*******************************************************************************
- * Event handlers
+ * Event handlers and Message Listeners
  ******************************************************************************/
 
 /***
@@ -167,6 +183,20 @@ function addLatest(message) {
 }
 
 
+/***
+ * Reload the settings from storage.
+ *
+ * Triggered by a message sent from options.html.
+ */
+async function reloadSettings(message) {
+  if (message.type != "reload_settings") {
+    return;
+  }
+
+  await loadSettings();
+}
+
+
 
 /*******************************************************************************
  * Main function called on browser startup or extension load
@@ -175,14 +205,17 @@ function addLatest(message) {
 /***
  * Main procedure function, called on extension initialization
  */
-(() => {
+(async () => {
   // TODO: Remove, or uncomment if the tablist is used again
   // browser.tabs.onRemoved.addListener(tabId => delete tabs[tabId]);
+
+  await loadSettings();
 
   // Set up listeners
   browser.tabs.onUpdated.addListener(handleTabUpdated);
   browser.browserAction.onClicked.addListener(handleActionClicked);
   browser.runtime.onMessage.addListener(addLatest);
+  browser.runtime.onMessage.addListener(reloadSettings);
   browser.commands.onCommand.addListener(command => {
     if (command === "open_in_new_tab") {
       browser.tabs.query({active: true, currentWindow: true})

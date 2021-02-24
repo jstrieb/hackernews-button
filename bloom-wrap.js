@@ -99,7 +99,7 @@ function canonicalizeUrl(rawUrl) {
  */
 async function deleteStoredBloom() {
   await browser.storage.local.remove("bloom_filter");
-  await browser.storage.local.get().then(console.log);
+  await browser.storage.local.get();
 }
 
 
@@ -156,7 +156,9 @@ async function fetchInfo() {
  * Fetch the latest Bloom filter(s). Returns a Bloom filter object.
  */
 async function fetchBloom(filename, info, decompress = true) {
-  console.debug("Fetching new Bloom filter...");
+  if (window.settings.debug_mode) {
+    console.debug("Fetching new Bloom filter...");
+  }
   let url = ("https://github.com/jstrieb/hackernews-button/releases/latest/"
             + `download/${filename}`);
   let b = await fetch(url, {
@@ -185,13 +187,17 @@ async function fetchBloom(filename, info, decompress = true) {
     // Semaphore for whether it is currently being stored
     currently_storing: false,
   };
-  console.debug("Fetched: ", bloom);
+  if (window.settings.debug_mode) {
+    console.debug("Fetched: ", bloom);
+  }
 
   if (decompress) {
     // Set bloom.addr
     if (bloom.compressed) {
       decompressBloom(bloom);
-      console.debug("Decompressed: ", bloom);
+      if (window.settings.debug_mode) {
+        console.debug("Decompressed: ", bloom);
+      }
     } else {
       newBloom(bloom);
     }
@@ -409,7 +415,9 @@ async function loadBloom() {
   // browser.storage.local.remove("bloom_filter")
   window.bloom = (await browser.storage.local.get("bloom_filter")).bloom_filter;
   if (!window.bloom || !window.bloom.filter) {
-    console.debug("Fetching Bloom filter info...");
+    if (window.settings.debug_mode) {
+      console.debug("Fetching Bloom filter info...");
+    }
     let info = await fetchInfo();
 
     // Fetch the Bloom filter without decompressing (in this case, that happens
@@ -432,7 +440,9 @@ async function loadBloom() {
   if (window.bloom.compressed) {
     decompressBloom(window.bloom);
     await storeBloom(window.bloom);
-    console.debug("Decompressed: ", window.bloom);
+    if (window.settings.debug_mode) {
+      console.debug("Decompressed: ", window.bloom);
+    }
   } else {
     newBloom(window.bloom);
   }
