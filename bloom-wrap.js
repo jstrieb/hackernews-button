@@ -144,6 +144,10 @@ async function storeBloom(bloom) {
  * Fetch auto-generated Bloom filter metadata.
  */
 async function fetchInfo() {
+  if (window.settings.debug_mode) {
+    console.debug("Fetching info.json...");
+  }
+
   // Get info.json to find out which Bloom filters to download
   let infoUrl = ("https://github.com/jstrieb/hackernews-button/releases/latest"
       + "/download/info.json");

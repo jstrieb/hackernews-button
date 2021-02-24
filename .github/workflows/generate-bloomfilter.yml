@@ -196,6 +196,8 @@ jobs:
           # Two messages uses one for the title and the second for the body
           # Source:
           # https://git.io/JtfOg
+          #
+          # TODO: Fix fatal name collision failure if run more than once a day
           hub release create \
             "${ASSETS[@]}" \
             --message "$(date '+%b %d, %Y') Bloom filters" \

@@ -104,12 +104,14 @@ Browser extensions have a lot of power to harm users, so it is important to
 understand what you are running. To that end, I provide a description of how to
 read this code. Please audit the code before running it.
 
-This repository has three parts: code to pull Hacker News data and generate
-Bloom filters from it, code for the browser extension, and a single
-implementation of a Bloom filter library that is used by both the Bloom filter
-generator, and the browser extension. Each of the three individual parts of the
-code are described in greater depth below. Click "Details" below to expand and
-read more.
+This repository has three parts: 
+1. Code to pull Hacker News data and generate Bloom filters from it
+2. Code for the browser extension
+3. A Bloom filter library used by the Bloom filter generator and the browser
+   extension – just one implementation used by both parts of the project
+
+Each of the three individual parts of the code are described in greater depth
+below. Click "Details" below to expand and read more.
 
 The
 [`Makefile`](https://github.com/jstrieb/hackernews-button/blob/master/Makefile)
@@ -130,7 +132,7 @@ Files to read:
 The code for Bloom filters is implemented in C. This code is used in a
 command-line C program to generate Bloom filters, which is compiled using
 `gcc`. It is also used by the browser extension in a wrapper library, which is
-compiled to WebAssembly using `emscripten` (`emcc` in the `Makefile`).
+compiled to WebAssembly using Emscripten (`emcc` in the `Makefile`).
 
 The [`test`](https://github.com/jstrieb/hackernews-button/tree/master/test)
 folder includes tests for various parts of the Bloom filter library to ensure
@@ -192,7 +194,7 @@ makes the Bloom filter library (implemented in C) easily accessible from
 JavaScript via low-level wrappers and high-level helper functions. It also
 includes code that, when the browser starts and WebAssembly is ready, attempts
 to either load a Bloom filter from local storage, or download the latest one
-from GitHub.
+from GitHub. 
 
 The content script that runs on `news.ycombinator.com` pages extracts "story"
 URLs from the pages and adds them to the Bloom filter. This is useful because
@@ -201,6 +203,11 @@ frequency of BigQuery dataset updates), so adding stories to the Bloom filter
 this way makes it possible to use the extension to view the discussion for
 recently-submitted posts. This would otherwise not be possible until the Bloom
 filter is updated many hours later.
+
+Note that the `background.html` page also loads a script `bloom.js` that is not
+in the repo. As per the
+[`Makefile`](https://github.com/jstrieb/hackernews-button/blob/d365b2a1619cd139186d3a162b9dd6de0bc13b0a/Makefile#L98-L111),
+this script is compiled from the Bloom filter C library using Emscripten.
 
 </details>
 
@@ -274,10 +281,10 @@ support, just ask first – open an issue to do so.
 
 There are a few ways to support this project.
 
-Most importantly: show your support by starring it and following me on GitHub.
-These things motivate me both to focus on this project instead of others, and
-to keep sharing what I make with other people. In the same vein, please
-consider sharing the project with others.
+Most importantly: show your support by starring the project and following me on
+GitHub. These things motivate me both to focus on this project instead of
+others, and to keep sharing what I make with other people. In the same vein,
+please consider sharing the project on platforms like Reddit and Twitter.
 
 Stars on GitHub also help me gauge who is making use of the project – since I
 do not include tracking or analytics in this or any project, I have no idea how
@@ -287,10 +294,9 @@ page](https://jstrieb.github.io/about/#contact) and say "hello" instead!
 
 If you are insistent on spending money to show your support, I encourage you to
 make a generous donation to the [Electronic Frontier
-Foundation](https://supporters.eff.org/donate/) and tell me about it on my
-[contact page](https://jstrieb.github.io/about/#contact). By advocating for
-Internet freedoms, organizations like theirs help me to feel comfortable
-releasing work publicly on the Web.
+Foundation](https://supporters.eff.org/donate/). By advocating for Internet
+freedoms, organizations like theirs help me to feel comfortable releasing work
+publicly on the Web.
 
 
 

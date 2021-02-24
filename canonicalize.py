@@ -1,6 +1,9 @@
 #!/usr/bin/python3
+
 ###############################################################################
 ###############################################################################
+## 
+## canonicalize.py
 ##
 ## This file is used for "canonicalizing" URLs so that equivalent URLs
 ## submitted in slightly different forms don't give false negatives in the

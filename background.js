@@ -226,7 +226,7 @@ async function resetBloom(message) {
 
   await loadSettings();
 
-  // Set up listeners
+  // Set up event listeners
   browser.tabs.onUpdated.addListener(handleTabUpdated);
   browser.browserAction.onClicked.addListener(handleActionClicked);
   browser.commands.onCommand.addListener(command => {
@@ -236,7 +236,7 @@ async function resetBloom(message) {
     }
   });
 
-  // Message listeners
+  // Set up message listeners
   browser.runtime.onMessage.addListener(addLatest);
   browser.runtime.onMessage.addListener(reloadSettings);
   browser.runtime.onMessage.addListener(resetBloom);
