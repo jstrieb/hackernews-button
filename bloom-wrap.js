@@ -98,6 +98,9 @@ function canonicalizeUrl(rawUrl) {
  * console.
  */
 async function deleteStoredBloom() {
+  if (window.settings.debug_mode) {
+    console.debug("Deleting stored Bloom filter...");
+  }
   await browser.storage.local.remove("bloom_filter");
   await browser.storage.local.get();
 }
@@ -176,11 +179,11 @@ async function fetchBloom(filename, info, decompress = true) {
     num_bits: null,
     // WebAssembly heap-allocated Bloom filter address
     addr: null,
-    // Date of most recent filter download
+    // Date of most recent filter download as a Unix timestamp
     last_downloaded: Math.floor(Date.now() / 1000),
-    // Date of most recent filter generation
+    // Date of most recent filter generation as a Unix timestamp
     last_generated: info.date_generated,
-    // Date of anticipated filter regeneration
+    // Date of anticipated filter regeneration as a Unix timestamp
     next_generated: info.next_generated,
     // Filter filename
     filename: filename,
@@ -295,6 +298,10 @@ function newBloom(bloom) {
 
 
 function freeBloom(bloom) {
+  if (!bloom || !bloom.addr) {
+    return;
+  }
+
   Module.ccall(
     "js_free_bloom",
     null,

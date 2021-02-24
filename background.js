@@ -197,6 +197,21 @@ async function reloadSettings(message) {
 }
 
 
+/***
+ * Delete the stored Bloom filter and delete the in-memory Bloom filter. Then
+ * reload them all.
+ */
+async function resetBloom(message) {
+  if (message.type != "reset_bloom") {
+    return;
+  }
+
+  await deleteStoredBloom();
+  freeBloom(window.bloom);
+  await loadBloom();
+}
+
+
 
 /*******************************************************************************
  * Main function called on browser startup or extension load
@@ -214,14 +229,17 @@ async function reloadSettings(message) {
   // Set up listeners
   browser.tabs.onUpdated.addListener(handleTabUpdated);
   browser.browserAction.onClicked.addListener(handleActionClicked);
-  browser.runtime.onMessage.addListener(addLatest);
-  browser.runtime.onMessage.addListener(reloadSettings);
   browser.commands.onCommand.addListener(command => {
     if (command === "open_in_new_tab") {
       browser.tabs.query({active: true, currentWindow: true})
         .then(tabs => handleActionClicked(tabs[0], {button: 1, modifiers: []}));
     }
   });
+
+  // Message listeners
+  browser.runtime.onMessage.addListener(addLatest);
+  browser.runtime.onMessage.addListener(reloadSettings);
+  browser.runtime.onMessage.addListener(resetBloom);
 
   // Every 10 minutes, check if the Bloom filter is outdated, and update if so
   setInterval(updateBloom, 10 * 60 * 1000);

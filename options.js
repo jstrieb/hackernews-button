@@ -12,15 +12,12 @@
  ******************************************************************************/
 
 /***
- * Delete stored Bloom filters. Same as deleteStoredBloom in bloom-wrap.js, but
- * that is seemingly not in the namespace of the options page, so we copy the
- * function here instead of calling it directly.
- *
- * TODO: Delete in-memory Bloom filter
+ * Pass a message to background.js instructing it to delete the stored Bloom
+ * filter, and to clear the one currently in memory. Afterwards it reloads them
+ * from scratch.
  */
 async function handleResetBloom(event) {
-  await browser.storage.local.remove("bloom_filter");
-  await browser.storage.local.get();
+  browser.runtime.sendMessage({type: "reset_bloom"});
 }
 
 
