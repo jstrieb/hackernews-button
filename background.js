@@ -56,6 +56,7 @@ async function loadSettings() {
   if (!window.settings) {
     window.settings = {
       debug_mode: false,
+      multiple_filters: true,
     };
   }
 }
