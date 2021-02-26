@@ -101,8 +101,7 @@ class URL(object):
             self.path = self.path[:-len("index.html")]
         if self.path.endswith("index.php"):
             self.path = self.path[:-len("index.php")]
-        if self.path != "/":
-            self.path = self.path.rstrip("/")
+        self.path = self.path.rstrip("/")
 
         # Remove www. since it is very rare that sites need it these days
         if self.netloc.startswith("www."):
