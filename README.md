@@ -89,10 +89,17 @@ If the current page has been on Hacker News, the extension lights up and
 becomes clickable. Clicking it retrieves a link to the best discussion for the
 page and navigates the browser there.
 
-**Note:** you still send data to Algolia when you click the extension to visit
-the discussion. The improvement offered by using Bloom filters is to not send
-*all* of the sites you visit to the API, but *some* data still need to be sent
-to retrieve the link to the discussion. Moreover, by default an updated Bloom
+By default, the extension uses several Bloom filters to show a lower-bound on
+the score for each page. This can be easily disabled from the "Options" page
+for the extension, accessible by going to `about:addons`. It might be desirable
+to disable this if using multiple filters is too resource-intensive.
+
+## Disclaimer
+
+You still send data to Algolia when you click the extension to visit the
+discussion. The improvement offered by using Bloom filters is to not send *all*
+of the sites you visit to the API, but *some* data still need to be sent to
+retrieve the link to the discussion. Moreover, by default an updated Bloom
 filter is downloaded once every 24 hours from GitHub. It is possible that
 GitHub maintains logs of who downloads these releases.
 

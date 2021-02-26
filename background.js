@@ -83,13 +83,19 @@ function handleTabUpdated(tabId, changeInfo, tab) {
     return;
   }
 
-  if (!inBloom(window.bloom, tab_url.toString())) {
+  let scoreLabels = window.filters
+    .filter(f => inBloom(f, tab_url.toString()))
+    .map(f => f.threshold);
+
+  if (scoreLabels.length == 0) {
     deactivateBadge(tab.id);
     return;
   }
 
+  let score = scoreLabels.reduce((a, b) => Math.max(a, b));
+
   // TODO: Add bloom filter results to the tablist
-  activateBadge({points: ""}, tabId);
+  activateBadge({points: (score ? `${score}+` : "")}, tabId);
   return;
 }
 
@@ -172,13 +178,16 @@ function addLatest(message) {
     return;
   }
 
-  // TODO: Remove when multiple Bloom filters are implemented
-  let urls = message.stories.map(s => s.url);
-
-  urls.forEach(u => addBloom(window.bloom, u));
+  for (let i = 0; i < window.filters.length; i++) {
+    f = window.filters[i];
+    message.stories
+      .filter(u => u.score >= f.threshold)
+      .forEach(u => addBloom(f, u.url));
+  }
 
   // Save the updated Bloom filter
-  storeBloom(window.bloom)
+  // TODO: Does it even make sense to store this stuff this often?
+  storeBloom(window.filters)
     .catch(e => console.error(e));
 }
 
@@ -207,7 +216,7 @@ async function resetBloom(message) {
   }
 
   await deleteStoredBloom();
-  freeBloom(window.bloom);
+  window.filters.forEach(f => freeBloom(f));
   await loadBloom();
 }
 

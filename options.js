@@ -34,6 +34,19 @@ async function handleDebug(event) {
 }
 
 
+/***
+ * Store a value in the settings representing whether or not to use a single
+ * filter, or multiple filters.
+ */
+async function handleMultipleFilters(event) {
+  window.settings.multiple_filters = document.querySelector("#multiple-filters").checked;
+  await browser.storage.local.set({"settings": window.settings});
+
+  browser.runtime.sendMessage({type: "reload_settings"});
+  browser.runtime.sendMessage({type: "reset_bloom"});
+}
+
+
 
 /*******************************************************************************
  * Main Function (called on options page load)
@@ -47,15 +60,18 @@ async function loadSettings() {
   if (!window.settings) {
     window.settings = {
       debug_mode: false,
+      multiple_filters: true,
     };
   }
 
   // Set stateful UI widgets to current settings values
   document.querySelector("#debug-mode").checked = window.settings.debug_mode;
+  document.querySelector("#multiple-filters").checked = window.settings.multiple_filters;
 }
 
 (() => {
   loadSettings();
   document.querySelector("#reset").addEventListener("click", handleResetBloom);
   document.querySelector("#debug-mode").addEventListener("click", handleDebug);
+  document.querySelector("#multiple-filters").addEventListener("click", handleMultipleFilters);
 })();

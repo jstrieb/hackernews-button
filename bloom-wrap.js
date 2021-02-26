@@ -101,42 +101,62 @@ async function deleteStoredBloom() {
   if (window.settings.debug_mode) {
     console.debug("Deleting stored Bloom filter...");
   }
-  await browser.storage.local.remove("bloom_filter");
-  await browser.storage.local.get();
+  await browser.storage.local.remove("filters");
 }
 
 
 /***
  * Save the Bloom filter to local storage
  */
-async function storeBloom(bloom) {
+async function storeBloom(filters) {
   // Skip if storing is already in progress
-  if (!bloom || bloom.currently_storing) {
+  if (!filters || filters.some(f => f.currently_storing)) {
     return;
   }
 
-  // Set the semaphore so it is not stored by another call to this function
-  // while bloom.addr is set to null
-  bloom.currently_storing = true;
-
-  // Save the address and set the global one to null so that it is clear it has
-  // not been allocated in WebAssembly when the Bloom filter is restored from
-  // storage
-  let addr = bloom.addr;
-  bloom.addr = null;
-
-  // Update the filter attribute from WebAssembly memory
-  if (addr) {
-    bloom.filter = new Uint8Array(Module.HEAPU8.buffer, addr,
-        Math.pow(2, bloom.num_bits - 3));
+  if (window.settings.debug_mode) {
+    console.debug("Storing Bloom filters...");
   }
 
-  // Store the Bloom filter and restore the address
-  await browser.storage.local.set({"bloom_filter": bloom});
-  bloom.addr = addr;
+  let addrs = {};
 
-  // Unset the semaphore
-  bloom.currently_storing = false;
+  for (let i = 0; i < filters.length; i++) {
+    let f = filters[i];
+
+    // Set the semaphore so it is not stored by another call to this function
+    // while bloom.addr is set to null
+    f.currently_storing = true;
+
+    // Save the address and set the global one to null so that it is clear it
+    // has not been allocated in WebAssembly when the Bloom filter is restored
+    // from storage
+    let addr = f.addr;
+    addrs[f.threshold] = addr;
+    f.addr = null;
+
+    // Update the filter attribute from WebAssembly memory
+    if (addr) {
+      f.filter = new Uint8Array(Module.HEAPU8.buffer, addr,
+          Math.pow(2, f.num_bits - 3));
+    }
+  }
+
+  // Store the Bloom filter
+  await browser.storage.local.set({"filters": filters});
+
+  for (let i = 0; i < filters.length; i++) {
+    let f = filters[i];
+
+    // Restore addresses
+    f.addr = addrs[f.threshold];
+
+    // Unset the semaphore
+    f.currently_storing = false;
+  }
+
+  if (window.settings.debug_mode) {
+    console.debug("Completed storing Bloom filters.");
+  }
 }
 
 
@@ -162,7 +182,10 @@ async function fetchInfo() {
 /***
  * Fetch the latest Bloom filter(s). Returns a Bloom filter object.
  */
-async function fetchBloom(filename, info, decompress = true) {
+async function fetchBloom(dateString, threshold, info, decompress = true) {
+  let filename = (dateString 
+                  ? `hn-${dateString}-${threshold}.bloom` 
+                  : `hn-${threshold}.bloom`);
   if (window.settings.debug_mode) {
     console.debug("Fetching new Bloom filter...");
   }
@@ -193,6 +216,8 @@ async function fetchBloom(filename, info, decompress = true) {
     filename: filename,
     // Semaphore for whether it is currently being stored
     currently_storing: false,
+    // Score threshold
+    threshold: threshold,
   };
   if (window.settings.debug_mode) {
     console.debug("Fetched: ", bloom);
@@ -216,13 +241,15 @@ async function fetchBloom(filename, info, decompress = true) {
 
 /***
  * Update the Bloom filter(s) to the latest versions. Destructively modifies
- * the global object window.bloom
+ * the global object window.filters
  */
 async function updateBloom(force = false) {
   // If a Bloom filter has never been loaded, try to load it again
   // NOTE: Since updateBloom is called regularly, this could get expensive if
   // there is no Internet connection or something
-  if (!window.bloom || !window.bloom.filter || !window.bloom.addr) {
+  if (!window.filters 
+      || !window.filters.every(f => f.filter)
+      || !window.filters.every(f => f.addr)) {
     await loadBloom();
     return;
   }
@@ -230,56 +257,60 @@ async function updateBloom(force = false) {
   // If the anticipated next generated time hasn't happened yet, don't check
   // for anything
   let now = Math.floor(Date.now() / 1000);
-  if (!force && window.bloom.next_generated > now) {
+  if (!force && window.filters.every(f => f.next_generated > now)) {
     return;
   }
 
   // Get info.json to find out which Bloom filters to download
   let info = await fetchInfo();
 
-  // If the downloaded info.json is the same or older than the last generated
-  // one, make sure the next_generated time is set properly. Theoretically,
-  // this should be an unnecessary check if the next_generated prediction is
-  // incorrect
-  if (!force && info.date_generated <= window.bloom.last_generated) {
-    window.bloom.next_generated = info.next_generated;
-    return;
+  for (let i = 0; i < window.filters.length; i++) {
+    let f = window.filters[i];
+
+    // If the downloaded info.json is the same or older than the last generated
+    // one, make sure the next_generated time is set properly. Theoretically,
+    // this should be an unnecessary check if the next_generated prediction is
+    // incorrect
+    if (!force && info.date_generated <= f.last_generated) {
+      f.next_generated = info.next_generated;
+      return;
+    }
+
+    // Sort dates to the correct date range to download from. Sorted by lowest
+    // number i.e., oldest timestamp first
+    let sorted = Object.keys(info.dates).map(Number).sort((x, y) => x - y);
+
+    // If older than the oldest by a large margin, download fresh
+    if (sorted[0] - f.last_downloaded > 7 * 24 * 60 * 60) {
+      freeBloom(f);
+      window.filters[i] = await fetchBloom(null, f.threshold, info);
+    }
+
+    // Otherwise, pick the Bloom filter with the date closest to the
+    // last_generated date to combine with
+    else {
+      // Re-sort based on which is closest to the last_generated date
+      let l = f.last_generated;
+      sorted = sorted.sort((x, y) => Math.abs(x - l) - Math.abs(y - l));
+
+      // Download latest partial Bloom filter
+      let dateString = info.dates[sorted[0]];
+      let latestBloom = await fetchBloom(dateString, f.threshold, info);
+
+      // Combine the filters and update the datetimes
+      combineBloom(f, latestBloom);
+      f.last_downloaded = latestBloom.last_downloaded;
+      f.last_generated = latestBloom.last_generated;
+      f.next_generated = latestBloom.next_generated;
+
+      // Free the allocated partial Bloom filter
+      freeBloom(latestBloom);
+    }
   }
 
-  // Sort dates to the correct date range to download from. Sorted by lowest
-  // number i.e., oldest timestamp first
-  let sorted = Object.keys(info.dates).map(Number).sort((x, y) => x - y);
-
-  // If older than the oldest by a large margin, download fresh
-  if (sorted[0] - window.bloom.last_downloaded > 7 * 24 * 60 * 60) {
-    freeBloom(window.bloom);
-    window.bloom = await fetchBloom("hn-0.bloom", info);
-    await storeBloom(window.bloom);
-  }
-
-  // Otherwise, pick the Bloom filter with the date closest to the
-  // last_generated date to combine with
-  else {
-    // Re-sort based on which is closest to the last_generated date
-    let l = window.bloom.last_generated;
-    sorted = sorted.sort((x, y) => Math.abs(x - l) - Math.abs(y - l));
-
-    // Download latest partial Bloom filter
-    let dateString = info.dates[sorted[0]];
-    let latestBloom = await fetchBloom(`hn-${dateString}-0.bloom`, info);
-
-    // Combine the filters and update the datetimes
-    combineBloom(window.bloom, latestBloom);
-    window.bloom.last_downloaded = latestBloom.last_downloaded;
-    window.bloom.last_generated = latestBloom.last_generated;
-    window.bloom.next_generated = latestBloom.next_generated;
-
-    // Free the allocated partial Bloom filter
-    freeBloom(latestBloom);
-
-    // Store the updated Bloom filter
-    await storeBloom(window.bloom);
-  }
+  // Store the updated Bloom filter
+  await storeBloom(window.filters)
+    .catch(e => console.error(e));
 }
 
 
@@ -416,50 +447,67 @@ function combineBloom(bloom, new_bloom) {
  * with. This is typically right when the browser/extension starts up.
  */
 async function loadBloom() {
-  // If the Bloom filter is already allocated, free it
-  if (window.bloom && window.bloom.addr) {
-    freeBloom(window.bloom);
-  }
+  // If any Bloom filter(s) are already allocated, free them
+  window.filters?.forEach(bloom => {
+    if (bloom && bloom.addr) {
+      freeBloom(bloom);
+    }
+  });
 
-  // Try to get the Bloom filter out of storage, otherwise download latest. To
-  // clear the stored Bloom filter while testing, from the browser console do:
-  // browser.storage.local.remove("bloom_filter")
-  window.bloom = (await browser.storage.local.get("bloom_filter")).bloom_filter;
-  if (!window.bloom || !window.bloom.filter) {
+  // Try to get the Bloom filters out of storage, otherwise download latest.
+  window.filters = (await browser.storage.local.get("filters")).filters;
+  if (!window.filters || !window.filters.every(f => f.filter)) {
     if (window.settings.debug_mode) {
       console.debug("Fetching Bloom filter info...");
     }
     let info = await fetchInfo();
 
-    // Fetch the Bloom filter without decompressing (in this case, that happens
-    // outside the conditional in case a compressed Bloom filter was stored).
-    window.bloom = await fetchBloom("hn-0.bloom", info, false);
+    window.filters = [];
 
-    // Save the downloaded Bloom filter
-    await storeBloom(window.bloom);
+    // Use a fixed single filter or multiple, depending on user settings
+    let thresholds = window.settings.multiple_filters ? info.thresholds : [0];
+    for (let i = 0; i < thresholds.length; i++) {
+      // Fetch the Bloom filter without decompressing (in this case, that
+      // happens outside the conditional in case a compressed Bloom filter was
+      // stored).
+      let f = await fetchBloom(null, thresholds[i], info, false);
+      window.filters.push(f);
+    }
+
+    // Save the downloaded Bloom filters
+    await storeBloom(window.filters)
+      .catch(e => console.error(e));
   } else {
-    window.bloom.currently_storing = false;
+    // The currently_storing attribute is set to true when the filters are
+    // actually being stored. This restores them to an accurate state after the
+    // filters come out of storage.
+    window.filters.forEach(f => f.currently_storing = false);
   }
 
   // Fail (semi) gracefully if both attempts above to load a Bloom filter fail
-  if (!window.bloom || !window.bloom.filter) {
+  if (!window.filters || !window.filters.every(f => f.filter)) {
     throw "Couldn't load Bloom filter from local storage or the web!";
     return;
   }
 
-  // Set bloom.addr
-  if (window.bloom.compressed) {
-    decompressBloom(window.bloom);
-    await storeBloom(window.bloom);
-    if (window.settings.debug_mode) {
-      console.debug("Decompressed: ", window.bloom);
+  // Set bloom.addr, must use async-friendly foreach
+  for (let i = 0; i < window.filters.length; i++) {
+    let f = window.filters[i];
+    if (f.compressed) {
+      decompressBloom(f);
+      if (window.settings.debug_mode) {
+        console.debug("Decompressed: ", f);
+      }
+    } else {
+      newBloom(f);
     }
-  } else {
-    newBloom(window.bloom);
+
+    // TODO: Is this enough? Or is this leaking memory?
+    window.addEventListener("beforeunload", e => freeBloom(f.addr));
   }
 
-  // TODO: Is this enough? Or is this leaking memory?
-  window.addEventListener("beforeunload", e => freeBloom(window.bloom.addr));
+  await storeBloom(window.filters)
+    .catch(e => console.error(e));
 }
 
 // NOTE: This works because this file is run before the autogenerated bloom.js
