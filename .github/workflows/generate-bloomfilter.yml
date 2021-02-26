@@ -165,7 +165,7 @@ jobs:
           # takes 10 to 20 minutes to complete
           jo \
             -p \
-            thesholds=$(jo -a "${THRESHOLDS[@]}") \
+            thresholds=$(jo -a "${THRESHOLDS[@]}") \
             dates=$(jo "${DATES[@]}") \
             version="0.6" \
             compressed="true" \
