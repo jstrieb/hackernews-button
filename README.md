@@ -3,11 +3,17 @@
 Firefox extension that links to the [Hacker News](https://news.ycombinator.com)
 discussion for the current page and preserves privacy with Bloom filters.
 
+<div align="center">
+<a href="https://github.com/jstrieb/hackernews-button/releases/latest/download/hackernews-button.xpi">
+<img alt="Screenshot" width="400" src="https://github.com/jstrieb/hackernews-button/blob/master/doc/screenshot.png" />
+</a>
+</div>
+
 
 
 # Quick start
 
-<!-- TODO: add link to Mozilla web store and screenshots -->
+<!-- TODO: add link to Mozilla web store -->
 Install the browser extension and restart Firefox.
 - [Download from GitHub](https://github.com/jstrieb/hackernews-button/releases/latest/download/hackernews-button.xpi)
 
@@ -267,7 +273,7 @@ support, just ask first – open an issue to do so.
 
 - There is currently no version of this extension for Google Chrome. To read
   more and discuss, check out the relevant issue
-  [(#1)](https://github.com/jstrieb/hackernews-button/issues/1).
+  ([#1](https://github.com/jstrieb/hackernews-button/issues/1)).
 - The [URL
   canonicalization](https://github.com/jstrieb/hackernews-button/blob/master/canonicalize.py)
   is highly imperfect. There will inevitably be false negatives in Bloom filter
@@ -281,6 +287,8 @@ support, just ask first – open an issue to do so.
   stories (when browsing [new](https://news.ycombinator.com/newest), for
   example), Algolia may not have indexed the story yet, causing the redirect to
   fail.
+- On my computer, the plus signs in the badge text gets cut off for three-digit
+  scores ([#2](https://github.com/jstrieb/hackernews-button/issues/2)).
 
 
 
