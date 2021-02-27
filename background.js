@@ -187,9 +187,12 @@ function addLatest(message) {
   }
 
   // Save the updated Bloom filter
-  // TODO: Does it even make sense to store this stuff this often?
+  // TODO: Maybe re-enable this someday? Still it takes a couple seconds of
+  // fully blocking the process to store ~80MB of data.
+  /*
   storeBloom(window.filters)
     .catch(e => console.error(e));
+  */
 }
 
 
