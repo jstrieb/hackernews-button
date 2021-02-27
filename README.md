@@ -13,9 +13,9 @@ discussion for the current page and preserves privacy with Bloom filters.
 
 # Quick start
 
-<!-- TODO: add link to Mozilla web store -->
 Install the browser extension and restart Firefox.
 - [Download from GitHub](https://github.com/jstrieb/hackernews-button/releases/latest/download/hackernews-button.xpi)
+- [Download from the Mozilla Add-on website](https://addons.mozilla.org/en-US/firefox/addon/hacker-news-discussion-button/)
 
 ---
 
