@@ -57,7 +57,7 @@ website's URL fingerprint without making any requests over the Internet.
 
 <details>
 
-<summary>Click to read additional Bloom filter details</summary>
+<summary>Click to read Bloom filter parameter details</summary>
 
 Bloom filters are probabilistic data structures, which means that when you
 query whether a string is in the set represented by the Bloom filter, the
@@ -99,6 +99,60 @@ By default, the extension uses several Bloom filters to show a lower-bound on
 the score for each page. This can be easily disabled from the "Options" page
 for the extension, accessible by going to `about:addons`. It might be desirable
 to disable this if using multiple filters is too resource-intensive.
+
+<details>
+
+<summary>Click to read more about score thresholds</summary>
+
+It seemed reasonable to use at most five distinct Bloom filters. Because they
+become increasingly sparse as the number of stories in the Bloom filter
+decreases, they compress well, so adding additional Bloom filters doesn't have
+a massive impact on the total amount of data downloaded.
+
+On the other hand, uncompressed, they total `5 * 16MB = 80MB` in memory – more
+than this seemed unreasonable. 
+
+The five thresholds for the Bloom filters were chosen mostly by eye, but
+validated and tuned using analysis of the dataset. 
+
+| Range | Count |
+| --- | --- |
+| 0-10	| 3381917 |
+| 10-75 | 300300 |
+| 75-250 | 121291 |
+| 250-500 | 25739 |
+| 500+ | 7948 |
+
+<img alt="Bloom filter score range visualization" src="https://github.com/jstrieb/hackernews-button/blob/master/doc/range-chart.svg" />
+
+As of February 28, 2021, the ranges have an approximately logarithmically
+decreasing number of entries. This is desirable because this mirrors the true
+distribution of the data, which is also approximately logarithmic. It also
+allows for acceptably sensible, informative score ranges.
+
+<img alt="Aggregate Hacker News story scores" src="https://github.com/jstrieb/hackernews-button/blob/master/doc/scores-chart.svg" />
+
+The data used for this analysis can be viewed
+[here](https://docs.google.com/spreadsheets/d/1s41DRN3MrifjcqeYql88WAQH6nySIUYWs4NLUzDg7wM/edit?usp=sharing).
+It was generated with the following BigQuery SQL query, and the thresholds were
+tuned in the spreadsheet.
+
+``` sql
+SELECT
+  score,
+  COUNT(score) AS count
+FROM
+  `bigquery-public-data.hacker_news.full`
+WHERE
+  score IS NOT NULL
+  AND score != 0
+GROUP BY
+  score
+ORDER BY
+  score
+```
+
+</details>
 
 ## Disclaimer
 
