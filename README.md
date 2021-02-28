@@ -13,7 +13,7 @@ discussion for the current page and preserves privacy with Bloom filters.
 
 # Quick start
 
-Install the browser extension:
+Install the browser extension from one of the following sources:
 - [Download from the Mozilla Add-on website](https://addons.mozilla.org/en-US/firefox/addon/hacker-news-discussion-button/)
 - [Download from GitHub](https://github.com/jstrieb/hackernews-button/releases/latest/download/hackernews-button.xpi)
 
@@ -178,7 +178,7 @@ This repository has three parts:
    extension – just one implementation used by both parts of the project
 
 Each of the three individual parts of the code are described in greater depth
-below. Click "Details" below to expand and read more.
+below. Click "Details" to read more.
 
 The
 [`Makefile`](https://github.com/jstrieb/hackernews-button/blob/master/Makefile)
@@ -350,16 +350,16 @@ support, just ask first – open an issue to do so.
 
 There are a few ways to support this project.
 
-Most importantly: show your support by starring the project and following me on
-GitHub. These things motivate me both to focus on this project instead of
-others, and to keep sharing what I make with other people. In the same vein,
-please consider sharing the project on platforms like Reddit and Twitter.
+Most importantly: star this repository and follow me on GitHub. These things
+motivate me to to keep sharing what I build, and they provide validation that
+my work is appreciated. In the same vein, please consider sharing the project
+on platforms like Reddit and Twitter.
 
 Stars on GitHub also help me gauge who is making use of the project – since I
 do not include tracking or analytics in this or any project, I have no idea how
 many people use what I build unless they deliberately take action to notify me.
 If GitHub is not your style, reach out to me on my [contact
-page](https://jstrieb.github.io/about/#contact) and say "hello" instead!
+page](https://jstrieb.github.io/about/#contact) and say "hello" instead! 
 
 If you are insistent on spending money to show your support, I encourage you to
 make a generous donation to the [Electronic Frontier
