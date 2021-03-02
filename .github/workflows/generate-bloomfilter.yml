@@ -7,8 +7,8 @@
 
 name: Generate Bloom Filters
 
-# Run once every 12 hours because the BigQuery database is updated once
-# every 24 hours, but I don't know when. Also run when manually triggered.
+# Run once every 24 hours because the BigQuery database is updated once every
+# 24 hours. Also run when manually triggered.
 on:
   schedule:
     # This time is based loosely around when the BigQuery data updates
