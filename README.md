@@ -35,6 +35,9 @@ There are also keyboard shortcuts.
 
 Star this project if you like it!
 
+Read the [Hacker News Discussion](https://news.ycombinator.com/item?id=26301600)
+for this project.
+
 
 
 # How It Works
