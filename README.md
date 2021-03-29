@@ -365,10 +365,14 @@ If GitHub is not your style, reach out to me on my [contact
 page](https://jstrieb.github.io/about/#contact) and say "hello" instead! 
 
 If you are insistent on spending money to show your support, I encourage you to
-make a generous donation to the [Electronic Frontier
-Foundation](https://supporters.eff.org/donate/). By advocating for Internet
-freedoms, organizations like theirs help me to feel comfortable releasing work
-publicly on the Web.
+make a generous donation to one of the following organizations. By advocating
+for Internet freedoms, organizations like these help me to feel comfortable
+releasing work publicly on the Web.
+
+- [Electronic Frontier Foundation](https://supporters.eff.org/donate/)
+- [Signal Foundation](https://signal.org/donate/)
+- [Mozilla](https://donate.mozilla.org/en-US/)
+- [The Internet Archive](https://archive.org/donate/index.php)
 
 
 
