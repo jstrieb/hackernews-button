@@ -179,6 +179,8 @@ jobs:
             > generated/info.json
 
       - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd generated
 
@@ -188,20 +190,9 @@ jobs:
             --output "hackernews-button.xpi" \
             "https://github.com/jstrieb/hackernews-button/releases/latest/download/hackernews-button.xpi"
 
-          ASSETS=()
-          for ASSET in *; do
-            ASSETS+=("--attach" "$ASSET")
-          done
-
-          # Two messages uses one for the title and the second for the body
-          # Source:
-          # https://git.io/JtfOg
-          #
-          # TODO: Fix fatal name collision failure if run more than once a day
-          hub release create \
-            "${ASSETS[@]}" \
-            --message "$(date '+%b %d, %Y') Bloom filters" \
-            --message "Updated Bloom filters for Hacker News submitted stories for $(date '+%B %d, %^Y')" \
-            "$(date +%Y%m%d)"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # TODO: Fix fatal name collision failure if run more than once a day?
+          gh release create \
+            "$(date +%Y%m%d)" \
+            --title "$(date '+%b %d, %Y') Bloom filters" \
+            --notes "Updated Bloom filters for Hacker News submitted stories for $(date '+%B %d, %^Y')" \
+            *
