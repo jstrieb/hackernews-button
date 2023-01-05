@@ -314,9 +314,11 @@ support, just ask first – open an issue to do so.
 4. Generate a JSON key
 5. Enable Actions for the repository
 6. Copy the JSON key into an Actions secret called `BQ_JSON` (under Settings >
-   Secrets > Actions).
+   Secrets > Actions)
 7. Make your fork public if you want to be able to access it unauthenticated
 8. Change the repo to your liking, maintaining attribution and the LICENSE file!
+8. Change the repo to your liking, maintaining attribution and the LICENSE
+   file!
 
 
 
