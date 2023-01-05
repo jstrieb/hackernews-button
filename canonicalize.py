@@ -20,6 +20,7 @@
 
 import csv
 import json
+import re
 import sys
 import urllib.parse as urlparse
 
@@ -48,6 +49,7 @@ class URL(object):
         "at_xt",
         "_r",
     ]
+    archiveRegex = re.compile(r"/web/[^/]*/")
 
     def __init__(self, url):
         parsed = urlparse.urlsplit(url)
@@ -72,12 +74,15 @@ class URL(object):
     def queryStr(self, value):
         self.query = urlparse.parse_qs(value, keep_blank_values=True)
 
-    def canonicalize(self):
+    @classmethod
+    def canonicalize(cls, url):
         """
         Transform the current URL object to make it as "canonical" as possible.
         This includes removing unnecessary URL parameters, removing "www." from
         the beginning of URLs, stripping unnecessary parts of the path, and
         performing a few domain-specific adjustments.
+
+        Return a canonicalized URL object.
 
         NOTE: The order in which the transformations take place is subtly
         important. Do not change the order around without good reason.
@@ -85,6 +90,13 @@ class URL(object):
         NOTE: Any canonicalization changes made here *MUST* be reflected in the
         `canonicalizeUrl` function within the `bloom-wrap.js` file!
         """
+        self = cls(url)
+
+        # Use the original URL for archive.org links
+        if self.netloc == "web.archive.org" and self.path.startswith("/web"):
+            new_url = URL.archiveRegex.sub("", self.path)
+            return cls.canonicalize(new_url)
+
         # HTML files almost exclusively use URL parameters for tracking while
         # the underlying page remains the same
         if self.path.endswith(".html"):
@@ -126,6 +138,8 @@ class URL(object):
         if self.netloc == "en.m.wikipedia.org":
             self.netloc = "en.wikipedia.org"
 
+        return self
+
 
 ###############################################################################
 # Main function
@@ -134,8 +148,7 @@ class URL(object):
 def main():
     csvReader = csv.DictReader(sys.stdin)
     for entry in csvReader:
-        url = URL(entry["url"])
-        url.canonicalize()
+        url = URL.canonicalize(entry["url"])
         print(url)
 
 

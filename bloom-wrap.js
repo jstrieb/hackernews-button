@@ -44,6 +44,12 @@ function canonicalizeUrl(rawUrl) {
     .filter(p => p[0].startsWith("utm_"))
     .forEach(p => url.searchParams.delete(p[0]));
 
+  // Use original URL for archive.org links
+  if (url.host === "web.archive.org" && url.pathname.startsWith("/web")) {
+    const new_url = url.pathname.replace(/\/web\/[^\/]*\//, "");
+    return canonicalizeUrl(new_url);
+  }
+
   // Truncate index.html, index.php, and trailing slashes
   if (url.pathname.endsWith("index.html")) {
     url.pathname = url.pathname.slice(0, -"index.html".length);
