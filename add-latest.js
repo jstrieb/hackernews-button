@@ -15,7 +15,7 @@
  * the Bloom filter was downloaded.
  */
 function sendLatest() {
-  let stories = Array.from(document.querySelectorAll(".titlelink"));
+  let stories = Array.from(document.querySelectorAll(".titleline > a"));
   let scoreParents = Array.from(document.querySelectorAll(".subtext"));
   if (stories.length != scoreParents.length) {
     console.error("Different number of story links and scores!");
