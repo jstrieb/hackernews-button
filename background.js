@@ -140,7 +140,7 @@ function handleActionClicked(tab, onClickData) {
         // the story URL
         //
         // TODO: Match exact path?
-        return (url.host === hit_url.host
+        return ((url.host === hit_url.host || url.host === "web.archive.org")
                 && ((url.pathname === "/" && hit_url.pathname === "/")
                  || (url.pathname !== "/" && hit_url.pathname !== "/")));
       });
