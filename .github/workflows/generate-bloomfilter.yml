@@ -10,18 +10,9 @@ name: Generate Bloom Filters
 # Run once every 24 hours because the BigQuery database is updated once every
 # 24 hours. Also run when manually triggered.
 on:
-  # Automatic running disabled for now since BigQuery is not working in GitHub
-  # Actions, and since the BigQuery Hacker News dataset is not up-to-date
-  # anyway:
-  #
-  # - https://issuetracker.google.com/issues/315864442
-  # - https://issuetracker.google.com/issues/261579123
-  #
-  # I'll get around to fixing this someday.
-  #
-  # schedule:
+  schedule:
     # This time is based loosely around when the BigQuery data updates
-    # - cron: "5 16 * * *"
+    - cron: "5 16 * * *"
   workflow_dispatch:
 
 
@@ -50,6 +41,7 @@ jobs:
           # it from outputting the annoying welcome message directly into the
           # CSV we are attempting to process
           bq query \
+            --project_id=hacker-news-analysis-300719 \
             --use_legacy_sql=false \
             'SELECT COUNT(*) FROM `bigquery-public-data.hacker_news.full`
              WHERE type = "story"'
@@ -62,6 +54,7 @@ jobs:
         run: |
           # Note that max_rows must be an unsigned, 32-bit int
           bq query \
+            --project_id=hacker-news-analysis-300719 \
             --format csv \
             --max_rows 99999999 \
             --use_legacy_sql=false \
