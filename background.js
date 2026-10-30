@@ -150,9 +150,11 @@ function handleActionClicked(tab, onClickData) {
       if (stories.length > 0) {
         let hn_id = stories[0].objectID;
         let hn_url = `https://news.ycombinator.com/item?id=${hn_id}`;
-        if (onClickData.button == 0 && onClickData.modifiers.length == 0) {
+        // Firefox for Android may not pass click data, and has no windows API
+        if (!onClickData
+            || (onClickData.button == 0 && onClickData.modifiers.length == 0)) {
           browser.tabs.update(tab.id, {url: hn_url});
-        } else if (onClickData.modifiers.includes("Shift")) {
+        } else if (onClickData.modifiers.includes("Shift") && browser.windows) {
           browser.windows.create({url: hn_url});
         } else {
           browser.tabs.create({url: hn_url});
@@ -242,12 +244,15 @@ async function resetBloom(message) {
   // Set up event listeners
   browser.tabs.onUpdated.addListener(handleTabUpdated);
   browser.browserAction.onClicked.addListener(handleActionClicked);
-  browser.commands.onCommand.addListener(command => {
-    if (command === "open_in_new_tab") {
-      browser.tabs.query({active: true, currentWindow: true})
-        .then(tabs => handleActionClicked(tabs[0], {button: 1, modifiers: []}));
-    }
-  });
+  // Keyboard shortcuts are not supported on Firefox for Android
+  if (browser.commands) {
+    browser.commands.onCommand.addListener(command => {
+      if (command === "open_in_new_tab") {
+        browser.tabs.query({active: true, currentWindow: true})
+          .then(tabs => handleActionClicked(tabs[0], {button: 1, modifiers: []}));
+      }
+    });
+  }
 
   // Set up message listeners
   browser.runtime.onMessage.addListener(addLatest);
